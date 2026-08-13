@@ -25,11 +25,9 @@ from modules.moderacion import (
 )
 """
 
-"""
 from modules.empleo import (
-
+    crear_oferta
 )
-"""
 
 app = Flask(__name__)
 
@@ -276,6 +274,40 @@ def eliminar_usuario_api(id_usuario):
 # ---------------------------------EMPLEO.PY---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
+@app.route("/nuevo_empleo", methods=["POST"])
+def nuevo_empleo():
+
+    datos = request.get_json()
+
+    puesto = datos.get("puesto")
+    descripcion = datos.get("descripcion")
+    jornada = datos.get("jornada")
+    vacantes = datos.get("vacantes")
+    
+    try:
+
+        creado = crear_oferta(
+            puesto,
+            descripcion,
+            jornada,
+            vacantes,
+        )
+
+        if creado:
+
+            return jsonify({
+                "resultado": "Guardada en borrador"
+            }), 201
+
+        return jsonify({
+            "resultado": "No se pudo crear la oferta"
+        }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 
