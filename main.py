@@ -28,7 +28,10 @@ from modules.moderacion import (
 """
 
 from modules.empleo import (
-    crear_oferta
+    crear_oferta,
+    crear_oferta_borrador,
+    buscar_oferta_por_id,
+    subir_borrador
 )
 
 app = Flask(__name__)
@@ -298,6 +301,42 @@ def nuevo_empleo():
         if creado:
 
             return jsonify({
+                "resultado": "Oferta subida"
+            }), 201
+
+        return jsonify({
+            "resultado": "No se pudo crear la oferta"
+        }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
+@app.route("/nuevo_empleo_borrador", methods=["POST"])
+def nuevo_empleo_borrador():
+
+    datos = request.get_json()
+
+    puesto = datos.get("puesto")
+    descripcion = datos.get("descripcion")
+    jornada = datos.get("jornada")
+    vacantes = datos.get("vacantes")
+    
+    try:
+
+        creado = crear_oferta_borrador(
+            puesto,
+            descripcion,
+            jornada,
+            vacantes,
+        )
+
+        if creado:
+
+            return jsonify({
                 "resultado": "Guardada en borrador"
             }), 201
 
@@ -312,6 +351,43 @@ def nuevo_empleo():
         }), 500
 
 
+@app.route("/subir_borrador/<int:id_oferta>", methods=["PUT"])
+def subir_borrador(id_oferta):
+
+    datos = request.get_json()
+
+    puesto = datos.get("puesto")
+    descripcion = datos.get("descripcion")
+    jornada = datos.get("jornada")
+    vacantes = datos.get("vacantes")
+
+    try:
+
+        oferta = buscar_oferta_por_id(id_oferta)
+
+        if oferta is None:
+
+            return jsonify({
+                "resultado": "Oferta no encontrada"
+            }), 404
+
+        actualizado = subir_borrador(id_oferta, puesto, descripcion, jornada, vacantes)
+
+        if actualizado:
+
+            return jsonify({
+                "resultado": "Borrador subido"
+            }), 200
+
+        return jsonify({
+            "resultado": "No se pudo subir el borrador"
+        }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 
