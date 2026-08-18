@@ -131,7 +131,7 @@ def buscar_oferta_por_id(id_oferta):
 
     return oferta
 
-def buscar_borradores():
+def buscar_borradores(id_negocio):
 
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
@@ -139,10 +139,11 @@ def buscar_borradores():
     sql = """
         SELECT *
         FROM OfertaLaboral
-        WHERE estado = %s
+        WHERE id_negocio = %s
+        AND estado = %s
     """
 
-    cursor.execute(sql, ("Inactivo",))
+    cursor.execute(sql, (id_negocio, "Inactivo",))
 
     oferta = cursor.fetchall()
 
@@ -150,3 +151,80 @@ def buscar_borradores():
     conexion.close()
 
     return oferta
+
+def listar_ofertas():
+
+    conexion = obtener_conexion()
+
+    cursor = conexion.cursor(dictionary=True)
+
+    sql = """
+    SELECT
+        id_oferta,
+        id_negocio,
+        puesto,
+        descripcion,
+        jornada,
+        vacantes
+    FROM OfertaLaboral
+    ORDER BY id_oferta;
+    """
+
+    cursor.execute(sql)
+
+    ofertas = cursor.fetchall()
+
+    cursor.close()
+    conexion.close()
+
+    return ofertas
+
+def listar_ofertas_activas():
+
+    conexion = obtener_conexion()
+
+    cursor = conexion.cursor(dictionary=True)
+
+    sql = """
+    SELECT
+        id_oferta,
+        id_negocio,
+        puesto,
+        descripcion,
+        jornada,
+        vacantes
+    FROM OfertaLaboral
+    WHERE estado = %s
+    ORDER BY id_oferta;
+    """
+
+    cursor.execute(sql, ("Activo"))
+
+    ofertas = cursor.fetchall()
+
+    cursor.close()
+    conexion.close()
+
+    return ofertas
+
+def eliminar_oferta(id_oferta):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    sql = """
+        UPDATE OfertaLaboral
+        SET estado = 'Eliminado'
+        WHERE id_oferta = %s
+    """
+
+    cursor.execute(sql, (id_oferta,))
+
+    conexion.commit()
+
+    eliminado = cursor.rowcount > 0
+
+    cursor.close()
+    conexion.close()
+
+    return eliminado

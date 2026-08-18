@@ -31,7 +31,11 @@ from modules.empleo import (
     crear_oferta,
     crear_oferta_borrador,
     buscar_oferta_por_id,
-    subir_borrador
+    subir_borrador,
+    buscar_borradores,
+    listar_ofertas,
+    listar_ofertas_activas,
+    eliminar_oferta
 )
 
 app = Flask(__name__)
@@ -390,15 +394,98 @@ def subir_borrador(id_oferta):
         }), 500
 
 
+@app.route("/mostrar_borradores/<int:id_usuario>", methods=["GET"])
+def mostrar_borradores(id_usuario):
+
+    try:
+
+        usuario = buscar_usuario_por_id(id_usuario)
+
+        if usuario is None:
+
+            return jsonify({
+                "resultado": "Usuario no encontrado"
+            }), 404
+        
+        borrador = buscar_borradores(id_usuario)
+        
+        if borrador is None:
+        
+            return jsonify({
+                "resultado": "Sin borradores"
+            }), 404
+
+        return jsonify(borrador), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
+@app.route("/traer_ofertas", methods=["GET"])
+def traer_ofertas():
+
+    try:
+
+        ofertas = listar_ofertas()
+
+        return jsonify(ofertas), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
+@app.route("/traer_ofertas_activas", methods=["GET"])
+def traer_ofertas_activas():
+
+    try:
+
+        ofertas = listar_ofertas_activas()
+
+        return jsonify(ofertas), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
+@app.route("/eliminar_oferta/<int:id_usuario>", methods=["DELETE"])
+def eliminar_oferta(id_oferta):
 
+    try:
 
+        oferta = buscar_oferta_por_id(id_oferta)
 
+        if oferta is None:
+
+            return jsonify({
+                "resultado": "Oferta no encontrada"
+            }), 404
+
+        eliminado = eliminar_oferta(id_oferta)
+
+        if eliminado:
+
+            return jsonify({
+                "resultado": "Oferta eliminada"
+            }), 200
+
+        return jsonify({
+            "resultado": "No se pudo eliminar la oferta"
+        }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 
