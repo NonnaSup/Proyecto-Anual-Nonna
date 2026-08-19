@@ -47,7 +47,8 @@ Content-Type: application/json
 # ---------------------------------NEGOCIO---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
-POST http://https://proyecto-anual-nonna-production.up.railway.app/nuevo_negocio
+
+POST https://proyecto-anual-nonna-production.up.railway.app/nuevo_negocio
 Content-Type: application/json
 
 {

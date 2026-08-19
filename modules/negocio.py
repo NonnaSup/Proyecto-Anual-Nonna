@@ -39,7 +39,7 @@ def crear_negocio(
     valores = (
         id_usuario,
         nombre_comercial,
-        "FALSE",
+        False,
         descripcion,
         logo,
         portada,
