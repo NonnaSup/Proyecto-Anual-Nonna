@@ -15,11 +15,10 @@ from modules.receta import (
 )
 """
 
-""""
+
 from modules.negocio import (
-    
+    crear_negocio
 )
-"""
 
 """
 from modules.moderacion import (
@@ -244,6 +243,57 @@ def eliminar_usuario_api(id_usuario):
 # ---------------------------------NEGOCIO.PY---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
+@app.route("/nuevo_negocio", methods=["POST"])
+def nuevo_negocio():
+
+    datos = request.get_json()
+
+
+    id_usuario = datos.get("id_usuario")
+    nombre_comercial = datos.get("nombre_comercial")
+    descripcion = datos.get("descripcion")
+    logo = datos.get("logo")
+    portada = datos.get("portada")
+    telefono = datos.get("telefono")
+    correo = datos.get("correo")
+    sitio_web = datos.get("sitio_web")
+    redes_sociales = datos.get("redes_sociales")
+
+    if not id_usuario or not nombre_comercial or not telefono or not correo:
+
+        return jsonify({
+            "error": "Faltan datos obligatorios"
+        }), 400
+
+    try:
+
+        creado = crear_negocio(
+            id_usuario,
+            nombre_comercial,
+            descripcion,
+            logo,
+            portada,
+            telefono,
+            correo,
+            sitio_web,
+            redes_sociales
+        )
+
+        if creado:
+
+            return jsonify({
+                "resultado": "Agregado nuevo negocio"
+            }), 201
+
+        return jsonify({
+            "resultado": "No se pudo crear el negocio"
+        }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 

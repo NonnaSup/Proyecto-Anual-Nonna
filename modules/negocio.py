@@ -4,15 +4,13 @@ from src.conexion import obtener_conexion
 def crear_negocio(
     id_usuario,
     nombre_comercial,
-    verificado,
     descripcion,
     logo,
     portada,
     telefono,
     correo,
     sitio_web,
-    redes_sociales,
-    estado
+    redes_sociales
 ):
 
     conexion = obtener_conexion()
@@ -24,7 +22,7 @@ def crear_negocio(
     (
         id_usuario,
         nombre_comercial,
-        verificado,
+        verificado, 
         descripcion,
         logo,
         portada,
@@ -41,7 +39,7 @@ def crear_negocio(
     valores = (
         id_usuario,
         nombre_comercial,
-        verificado,
+        "FALSE",
         descripcion,
         logo,
         portada,
@@ -49,7 +47,7 @@ def crear_negocio(
         correo,
         sitio_web,
         redes_sociales,
-        estado
+        "Activo"
     )
 
     cursor.execute(consulta, valores)

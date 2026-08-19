@@ -47,7 +47,20 @@ Content-Type: application/json
 # ---------------------------------NEGOCIO---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
+POST http://https://proyecto-anual-nonna-production.up.railway.app/nuevo_negocio
+Content-Type: application/json
 
+{
+    "id_usuario": "2",
+    "nombre_comercial": "Nonna Enterprise",
+    "descripcion": "adsfgwgrt",
+    "logo": "",
+    "portada": "",
+    "telefono": "123456",
+    "correo": "juan.perez.test@nonnatest.com",
+    "sitio_web": "",
+    "redes_sociales": ""
+}
 
 
 
