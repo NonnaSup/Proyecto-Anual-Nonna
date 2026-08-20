@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 
+
 from modules.usuario import (
     crear_usuario,
     listar_usuarios,
@@ -646,6 +647,10 @@ def eliminar_oferta(id_oferta):
 # ---------------------------------RECETA.PY---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
+@app.route("/nueva_receta", methods=["POST"])
+
+def nueva_receta():
+    
 
 
 
