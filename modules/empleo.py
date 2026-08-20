@@ -29,10 +29,10 @@ def crear_oferta(
         descripcion,
         jornada,
         vacantes,
-        "Activo",           # estado
+        True,           # estado
     )
 
-    cursor.execute(consulta, valores)
+    cursor.execute(consulta, valores,)
 
     conexion.commit()
 
@@ -71,10 +71,10 @@ def crear_oferta_borrador(
         descripcion,
         jornada,
         vacantes,
-        "Inactivo",           # estado
+        False,           # estado
     )
 
-    cursor.execute(consulta, valores)
+    cursor.execute(consulta, valores,)
 
     conexion.commit()
 
@@ -96,11 +96,11 @@ def subir_borrador(id_oferta, puesto, descripcion, jornada, vacantes):
             descripcion = %s,
             jornada = %s,
             vacantes = %s,
-            estado = "Activo"
+            estado = %s
         WHERE id_oferta = %s
     """
 
-    cursor.execute(sql, (id_oferta, puesto, descripcion, jornada, vacantes))
+    cursor.execute(sql, (puesto, descripcion, jornada, vacantes, True, id_oferta, ))
 
     conexion.commit()
 
@@ -143,7 +143,7 @@ def buscar_borradores(id_negocio):
         AND estado = %s
     """
 
-    cursor.execute(sql, (id_negocio, "Inactivo",))
+    cursor.execute(sql, (id_negocio, False,))
 
     oferta = cursor.fetchall()
 
@@ -198,7 +198,7 @@ def listar_ofertas_activas():
     ORDER BY id_oferta;
     """
 
-    cursor.execute(sql, ("Activo"))
+    cursor.execute(sql, (True,))
 
     ofertas = cursor.fetchall()
 
@@ -214,11 +214,11 @@ def eliminar_oferta(id_oferta):
 
     sql = """
         UPDATE OfertaLaboral
-        SET estado = 'Eliminado'
+        SET estado = %s
         WHERE id_oferta = %s
     """
 
-    cursor.execute(sql, (id_oferta,))
+    cursor.execute(sql, (3, id_oferta, ))
 
     conexion.commit()
 

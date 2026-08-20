@@ -48,6 +48,8 @@ Content-Type: application/json
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
 
+###
+
 POST https://proyecto-anual-nonna-production.up.railway.app/nuevo_negocio
 Content-Type: application/json
 

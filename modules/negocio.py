@@ -47,7 +47,7 @@ def crear_negocio(
         correo,
         sitio_web,
         redes_sociales,
-        "Activo"
+        True
     )
 
     cursor.execute(consulta, valores)
