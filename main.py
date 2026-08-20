@@ -17,7 +17,8 @@ from modules.receta import (
 
 
 from modules.negocio import (
-    crear_negocio
+    crear_negocio,
+    crear_sucursal
 )
 
 """
@@ -295,6 +296,49 @@ def nuevo_negocio():
             "error": str(e)
         }), 500
 
+
+@app.route("/nueva_sucursal", methods=["POST"])
+def nueva_sucursal():
+
+    datos = request.get_json()
+    
+    id_negocio = datos.get("id_negocio")
+    nombre = datos.get("nombre")
+    direccion = datos.get("direccion")
+    horarios = datos.get("horarios")
+    casa_central = datos.get("casa_central")
+
+    if not id_negocio or not nombre or not direccion or not horarios:
+
+        return jsonify({
+            "error": "Faltan datos obligatorios"
+        }), 400
+
+    try:
+
+        creado = crear_sucursal(
+            id_negocio,
+            nombre,
+            direccion,
+            horarios,
+            casa_central 
+        )
+
+        if creado:
+
+            return jsonify({
+                "resultado": "Agregada nueva sucursal"
+            }), 201
+
+        return jsonify({
+            "resultado": "No se pudo crear la sucursal"
+        }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 

@@ -60,3 +60,41 @@ def crear_negocio(
     conexion.close()
 
     return filas_afectadas > 0
+
+def crear_sucursal(id_negocio, nombre, direccion, horarios, casa_central):
+
+    conexion = obtener_conexion()
+
+    cursor = conexion.cursor(dictionary=True)
+
+    consulta = """
+    INSERT INTO Sucursal
+    (
+        id_negocio,
+        nombre,
+        direccion,
+        horarios,
+        casa_central 
+    )
+    VALUES
+    (%s, %s, %s, %s, %s)
+    """
+
+    valores = (
+        id_negocio,
+        nombre,
+        direccion,
+        horarios,
+        casa_central
+    )
+
+    cursor.execute(consulta, valores)
+
+    conexion.commit()
+
+    filas_afectadas = cursor.rowcount
+
+    cursor.close()
+    conexion.close()
+
+    return filas_afectadas > 0
