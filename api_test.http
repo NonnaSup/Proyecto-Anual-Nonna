@@ -19,11 +19,11 @@ POST https://proyecto-anual-nonna-production.up.railway.app/nuevo_usuario
 Content-Type: application/json
 
 {
-    "nombre": "Juan Perez",
-    "nombre_usuario": "juan_perez_test",
-    "correo": "juan.perez.test@nonnatest.com",
-    "clave": "123456",
-    "fecha_nacimiento": "2005-05-15"
+    "nombre": "Pablo",
+    "nombre_usuario": "Blito",
+    "correo": "Pabloncho@nonnatest.com",
+    "clave": "12345678",
+    "fecha_nacimiento": "2007-02-14"
 }
 
 
