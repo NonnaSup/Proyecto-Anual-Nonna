@@ -15,7 +15,7 @@ GET http://127.0.0.1:5000/
 
 ### Crear usuario
 
-POST http://127.0.0.1:5000/nuevo_usuario
+POST https://proyecto-anual-nonna-production.up.railway.app/nuevo_usuario
 Content-Type: application/json
 
 {
