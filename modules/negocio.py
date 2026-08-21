@@ -113,9 +113,9 @@ def buscar_casa_central(id_negocio):
 
     cursor.execute(sql, (id_negocio, True,))
 
-    oferta = cursor.fetchall()
+    oferta = cursor.fetchone()
 
     cursor.close()
     conexion.close()
 
-    return oferta
+    return oferta is not None

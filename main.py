@@ -313,7 +313,7 @@ def nueva_sucursal():
     try:
         buscar = buscar_casa_central(id_negocio)
 
-        if buscar and casa_central:
+        if buscar and casa_central == 1:
             return jsonify({
                 "error": "Ya hay una casa central"
             }), 400
