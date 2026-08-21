@@ -134,6 +134,19 @@ Content-Type: application/json
 }
 
 
+### Nuevo empleo en borrador
+
+POST https://proyecto-anual-nonna-production.up.railway.app/nuevo_empleo_borrador
+Content-Type: application/json
+
+{
+    "id_negocio": "4",
+    "id_sucursal": "1",
+    "puesto": "Cajero",
+    "descripcion": "Cajero de 40 años de experiencia",
+    "jornada": "De 10:00 a 17:00",
+    "vacantes": "10"
+}
 
 
 
