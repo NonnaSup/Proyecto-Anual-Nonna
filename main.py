@@ -308,7 +308,7 @@ def nueva_sucursal():
     nombre = datos.get("nombre")
     direccion = datos.get("direccion")
     horarios = datos.get("horarios")
-    casa_central = datos.get("casa_central")
+    casa_central = int(datos.get("casa_central", 0))
 
     try:
         buscar = buscar_casa_central(id_negocio)
