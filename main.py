@@ -384,6 +384,8 @@ def nuevo_empleo():
 
     datos = request.get_json()
 
+    id_negocio = datos.get("id_negocio")
+    id_sucursal = datos.get("id_sucursal")
     puesto = datos.get("puesto")
     descripcion = datos.get("descripcion")
     jornada = datos.get("jornada")
@@ -392,6 +394,8 @@ def nuevo_empleo():
     try:
 
         creado = crear_oferta(
+            id_negocio,
+            id_sucursal,
             puesto,
             descripcion,
             jornada,
@@ -420,6 +424,8 @@ def nuevo_empleo_borrador():
 
     datos = request.get_json()
 
+    id_negocio = datos.get("id_negocio")
+    id_sucursal = datos.get("id_sucursal")
     puesto = datos.get("puesto")
     descripcion = datos.get("descripcion")
     jornada = datos.get("jornada")
@@ -428,6 +434,8 @@ def nuevo_empleo_borrador():
     try:
 
         creado = crear_oferta_borrador(
+            id_negocio,
+            id_sucursal,
             puesto,
             descripcion,
             jornada,

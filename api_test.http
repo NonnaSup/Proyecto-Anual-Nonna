@@ -78,7 +78,7 @@ Content-Type: application/json
     "nombre": "Nonna Enterprise Moreno",
     "direccion": "Osorio y Moreno 123",
     "horarios": "10:00 - 20:00",
-    "casa_central": "1"
+    "casa_central": "0"
 }
 
 
@@ -119,6 +119,19 @@ Content-Type: application/json
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
 
+### Nuevo empleo
+
+POST https://proyecto-anual-nonna-production.up.railway.app/nuevo_empleo
+Content-Type: application/json
+
+{
+    "id_negocio": "4",
+    "id_sucursal": "1",
+    "puesto": "Repositor",
+    "descripcion": "Repositor con la capacidad de repositar repuestos",
+    "jornada": "De 12:00 a 17:00",
+    "vacantes": "1"
+}
 
 
 

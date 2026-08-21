@@ -2,6 +2,8 @@ from src.conexion import obtener_conexion
 from datetime import date
 
 def crear_oferta(
+    id_negocio,
+    id_sucursal,
     puesto,
     descripcion,
     jornada,
@@ -14,6 +16,8 @@ def crear_oferta(
     consulta = """
     INSERT INTO OfertaLaboral
     (
+        id_negocio,
+        id_sucursal
         puesto,
         descripcion,
         jornada,
@@ -21,10 +25,12 @@ def crear_oferta(
         estado
     )
     VALUES
-    (%s,%s,%s,%s,%s)
+    (%s,%s,%s,%s,%s,%s,%s)
     """
 
     valores = (
+        id_negocio,
+        id_sucursal,
         puesto,
         descripcion,
         jornada,
@@ -44,6 +50,8 @@ def crear_oferta(
     return filas > 0
 
 def crear_oferta_borrador(
+    id_negocio,
+    id_sucursal,
     puesto,
     descripcion,
     jornada,
@@ -56,6 +64,8 @@ def crear_oferta_borrador(
     consulta = """
     INSERT INTO OfertaLaboral
     (
+        id_negocio,
+        id_sucursal,
         puesto,
         descripcion,
         jornada,
@@ -63,10 +73,12 @@ def crear_oferta_borrador(
         estado
     )
     VALUES
-    (%s,%s,%s,%s,%s)
+    (%s,%s,%s,%s,%s,%s,%s)
     """
 
     valores = (
+        id_negocio,
+        id_sucursal,
         puesto,
         descripcion,
         jornada,
@@ -159,13 +171,7 @@ def listar_ofertas():
     cursor = conexion.cursor(dictionary=True)
 
     sql = """
-    SELECT
-        id_oferta,
-        id_negocio,
-        puesto,
-        descripcion,
-        jornada,
-        vacantes
+    SELECT *
     FROM OfertaLaboral
     ORDER BY id_oferta;
     """
@@ -186,13 +192,7 @@ def listar_ofertas_activas():
     cursor = conexion.cursor(dictionary=True)
 
     sql = """
-    SELECT
-        id_oferta,
-        id_negocio,
-        puesto,
-        descripcion,
-        jornada,
-        vacantes
+    SELECT *
     FROM OfertaLaboral
     WHERE estado = %s
     ORDER BY id_oferta;
