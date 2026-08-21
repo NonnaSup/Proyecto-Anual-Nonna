@@ -98,3 +98,24 @@ def crear_sucursal(id_negocio, nombre, direccion, horarios, casa_central):
     conexion.close()
 
     return filas_afectadas > 0
+
+def buscar_casa_central(id_negocio):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    sql = """
+        SELECT *
+        FROM Sucursal
+        WHERE id_negocio = %s
+        AND casa_central = %s
+    """
+
+    cursor.execute(sql, (id_negocio, True,))
+
+    oferta = cursor.fetchall()
+
+    cursor.close()
+    conexion.close()
+
+    return oferta

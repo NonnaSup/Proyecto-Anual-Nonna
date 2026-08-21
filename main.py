@@ -19,7 +19,8 @@ from modules.receta import (
 
 from modules.negocio import (
     crear_negocio,
-    crear_sucursal
+    crear_sucursal,
+    buscar_casa_central
 )
 
 """
@@ -309,14 +310,14 @@ def nueva_sucursal():
     horarios = datos.get("horarios")
     casa_central = datos.get("casa_central")
 
-    if not id_negocio or not nombre or not direccion or not horarios:
-
-        return jsonify({
-            "error": "Faltan datos obligatorios"
-        }), 400
-
     try:
+        buscar = buscar_casa_central(id_negocio)
 
+        if buscar is True and casa_central is True:
+            return jsonify({
+                "error": "Ya hay una casa central"
+            }), 400
+        
         creado = crear_sucursal(
             id_negocio,
             nombre,
@@ -647,10 +648,6 @@ def eliminar_oferta(id_oferta):
 # ---------------------------------RECETA.PY---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
-@app.route("/nueva_receta", methods=["POST"])
-
-def nueva_receta():
-    
 
 
 

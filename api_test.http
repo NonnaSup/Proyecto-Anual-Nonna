@@ -50,7 +50,7 @@ Content-Type: application/json
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
 
-###
+### Nuevo Negocio
 
 POST https://proyecto-anual-nonna-production.up.railway.app/nuevo_negocio
 Content-Type: application/json
@@ -65,6 +65,20 @@ Content-Type: application/json
     "correo": "juan.perez.test@nonnatest.com",
     "sitio_web": "",
     "redes_sociales": ""
+}
+
+
+### Nueva Sucursal
+
+POST https://proyecto-anual-nonna-production.up.railway.app/nueva_sucursal
+Content-Type: application/json
+
+{
+    "id_negocio": "4",
+    "nombre": "Nonna Enterprise Warnes",
+    "direccion": "Warnes y Osorio 123",
+    "horarios": "10:00 - 20:00",
+    "casa_central": "True"
 }
 
 
