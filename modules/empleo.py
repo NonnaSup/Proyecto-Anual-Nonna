@@ -97,7 +97,7 @@ def crear_oferta_borrador(
 
     return filas > 0
 
-def subir_borrador(id_oferta, puesto, descripcion, jornada, vacantes):
+def actualizar_borrador(id_oferta, puesto, descripcion, jornada, vacantes):
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()

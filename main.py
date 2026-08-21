@@ -33,7 +33,7 @@ from modules.empleo import (
     crear_oferta,
     crear_oferta_borrador,
     buscar_oferta_por_id,
-    subir_borrador,
+    actualizar_borrador,
     buscar_borradores,
     listar_ofertas,
     listar_ofertas_activas,
@@ -479,7 +479,7 @@ def subir_borrador(id_oferta):
                 "resultado": "Oferta no encontrada"
             }), 404
 
-        actualizado = subir_borrador(id_oferta, puesto, descripcion, jornada, vacantes)
+        actualizado = actualizar_borrador(id_oferta, puesto, descripcion, jornada, vacantes)
 
         if actualizado:
 
