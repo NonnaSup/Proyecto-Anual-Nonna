@@ -17,7 +17,7 @@ def crear_oferta(
     INSERT INTO OfertaLaboral
     (
         id_negocio,
-        id_sucursal
+        id_sucursal,
         puesto,
         descripcion,
         jornada,
