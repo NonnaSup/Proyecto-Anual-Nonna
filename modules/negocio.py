@@ -111,7 +111,7 @@ def buscar_casa_central(id_negocio):
         AND casa_central = %s
     """
 
-    cursor.execute(sql, (id_negocio, True,))
+    cursor.execute(sql, (id_negocio, 1,))
 
     oferta = cursor.fetchone()
 

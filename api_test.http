@@ -78,7 +78,7 @@ Content-Type: application/json
     "nombre": "Nonna Enterprise Moreno",
     "direccion": "Osorio y Moreno 123",
     "horarios": "10:00 - 20:00",
-    "casa_central": "0"
+    "casa_central": "1"
 }
 
 
