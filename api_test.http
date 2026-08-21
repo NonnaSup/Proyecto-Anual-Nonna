@@ -75,10 +75,10 @@ Content-Type: application/json
 
 {
     "id_negocio": "4",
-    "nombre": "Nonna Enterprise Warnes",
+    "nombre": "Nonna Enterprise Wars",
     "direccion": "Warnes y Osorio 123",
     "horarios": "10:00 - 20:00",
-    "casa_central": "True"
+    "casa_central": "1"
 }
 
 
