@@ -655,6 +655,7 @@ def eliminar_oferta(id_oferta):
 # ---------------------------------RECETA.PY---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
+
 @app.route("/nueva_receta", methods=["POST"])
 def nueva_receta():
 
@@ -665,26 +666,32 @@ def nueva_receta():
     descripcion = datos.get("descripcion")
     tiempo_preparacion = datos.get("tiempo_preparacion")
     porciones = datos.get("porciones")
+
+    pasos = datos.get("pasos")
+    ingredientes = datos.get("ingredientes")
+    imagenes = datos.get("imagenes")
     
     try:
 
-        creado = crear_oferta(
-            id_negocio,
-            id_sucursal,
-            puesto,
+        receta = crear_receta(
+            id_usuario,
+            titulo,
             descripcion,
-            jornada,
-            vacantes,
+            tiempo_preparacion,
+            porciones,
+            pasos,
+            ingredientes,
+            imagenes
         )
 
-        if creado:
+        if receta:
 
             return jsonify({
-                "resultado": "Oferta subida"
+                "resultado": "receta subida"
             }), 201
 
         return jsonify({
-            "resultado": "No se pudo crear la oferta"
+            "resultado": "No se pudo crear la receta"
         }), 400
 
     except Exception as e:
@@ -694,8 +701,60 @@ def nueva_receta():
         }), 500
 
 
+"""
+@app.route("/nueva_receta", methods=["POST"])
+def nueva_receta():
 
+    datos = request.get_json()
 
+    id_usuario = datos.get("id_usuario")
+    titulo = datos.get("titulo")
+    descripcion = datos.get("descripcion")
+    tiempo_preparacion = datos.get("tiempo_preparacion")
+    porciones = datos.get("porciones")
+
+    numero = datos.get("numero")
+    descripcion_paso = datos.get("descripcion_paso")
+    cantidad = datos.get("cantidad")
+    unidad = datos.get("unidad")
+    TEXTo_libre = datos.get("TEXTo_libre")
+    ruta = datos.get("ruta")
+    principal = datos.get("principal")
+    orden = datos.get("orden")
+    
+    try:
+
+        id_receta = crear_receta(
+            id_usuario,
+            titulo,
+            descripcion,
+            tiempo_preparacion,
+            porciones
+        )
+
+        crear_pasos_ingredientes_imagen(
+            id_receta,
+            numero,
+            descripcion_paso,
+            cantidad,
+            unidad,
+            TEXTo_libre,
+            ruta,
+            principal,
+            orden
+        )
+
+        return jsonify({
+                "resultado": "Receta subida",
+
+            }), 201
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+"""
 
 
 

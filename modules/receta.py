@@ -7,53 +7,140 @@ def crear_receta(
     descripcion,
     tiempo_preparacion,
     porciones,
+    pasos,
+    ingredientes,
+    imagenes
 ):
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
-    consulta = """
-    INSERT INTO Receta
-    (
-        id_usuario,
-        titulo,
-        descripcion,
-        tiempo_preparacion,
-        porciones,
-        estado,
-        visibilidad,
-        fecha_publicacion
-    )
-    VALUES
-    (%s,%s,%s,%s,%s,%s,%s,%s)
-    """
+    try:
 
-    valores = (
-        id_usuario,
-        titulo,
-        descripcion,
-        tiempo_preparacion,
-        porciones,
-        True,
-        True,
-        date.today()    
-    )
+        consulta = """
+        INSERT INTO Receta
+        (
+            id_usuario,
+            titulo,
+            descripcion,
+            tiempo_preparacion,
+            porciones,
+            estado,
+            visibilidad,
+            fecha_publicacion
+        )
+        VALUES
+        (%s,%s,%s,%s,%s,%s,%s,%s)
+        """
 
-    cursor.execute(consulta, valores)
+        valores = (
+            id_usuario,
+            titulo,
+            descripcion,
+            tiempo_preparacion,
+            porciones,
+            True,
+            True,
+            date.today()    
+        )
 
-    conexion.commit()
+        cursor.execute(consulta, valores)
 
-    filas = cursor.rowcount
+        id_receta = cursor.lastrowid
 
-    cursor.close()
-    conexion.close()
 
-    return filas > 0
+
+        consulta_pasos = """
+        INSERT INTO Paso
+        (
+            id_receta,
+            numero,
+            descripcion_paso
+        )
+        VALUES
+        (%s,%s,%s)
+        """
+
+        for paso in pasos:
+            
+            valores_paso = (
+                id_receta,
+                paso["numero"],
+                paso["descripcion_paso"]
+            )
+
+            cursor.execute(consulta_pasos, valores_paso)
+
+
+
+        consulta_ingredientes = """
+        INSERT INTO RecetaIngrediente
+        (
+            id_receta,
+            cantidad,
+            unidad,
+            TEXTo_libre
+        )
+        VALUES
+        (%s,%s,%s,%s)
+        """
+
+        for ingrediente in ingredientes:
+            
+            valores_ingredientes = (
+                id_receta,
+                ingrediente["cantidad"],
+                ingrediente["unidad"],
+                ingrediente["TEXTo_libre"]
+            )
+
+            cursor.execute(consulta_ingredientes, valores_ingredientes)
+
+
+
+        consulta_imagenes = """
+        INSERT INTO Imagen
+        (
+            id_receta,
+            ruta,
+            principal,
+            orden
+        )
+        VALUES
+        (%s,%s,%s,%s)
+        """
+
+        for imagen in imagenes:
+            
+            valores_imagenes = (
+                id_receta,
+                imagen["ruta"],
+                imagen["principal"],
+                imagen["orden"]
+            )
+
+            cursor.execute(consulta_imagenes, valores_imagenes)
+
+
+        conexion.commit()
+
+        return id_receta
+
+    except Exception:
+        
+        conexion.rollback()
+        raise
+
+    finally:
+
+        cursor.close()
+        conexion.close()
+
 
 def crear_pasos_ingredientes_imagen(
     id_receta,
     numero,
-    descripcion,
+    descripcion_paso,
     cantidad,
     unidad,
     TEXTo_libre,
@@ -70,7 +157,7 @@ def crear_pasos_ingredientes_imagen(
     (
         id_receta,
         numero,
-        descripcion
+        descripcion_paso
     )
     VALUES
     (%s,%s,%s)
@@ -79,7 +166,7 @@ def crear_pasos_ingredientes_imagen(
     valores = (
         id_receta,
         numero,
-        descripcion
+        descripcion_paso
     )
 
     consulta2 = """
@@ -127,12 +214,10 @@ def crear_pasos_ingredientes_imagen(
 
     conexion.commit()
 
-    filas = cursor.rowcount
-
     cursor.close()
     conexion.close()
 
-    return filas > 0
+    return True
 
 ###///
 
