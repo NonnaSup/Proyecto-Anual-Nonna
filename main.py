@@ -10,11 +10,10 @@ from modules.usuario import (
 )
 
 
-"""
 from modules.receta import (
-    
+    crear_receta,
+    crear_pasos_ingredientes_imagen
 )
-"""
 
 
 from modules.negocio import (
@@ -656,7 +655,43 @@ def eliminar_oferta(id_oferta):
 # ---------------------------------RECETA.PY---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
+@app.route("/nueva_receta", methods=["POST"])
+def nueva_receta():
 
+    datos = request.get_json()
+
+    id_usuario = datos.get("id_usuario")
+    titulo = datos.get("titulo")
+    descripcion = datos.get("descripcion")
+    tiempo_preparacion = datos.get("tiempo_preparacion")
+    porciones = datos.get("porciones")
+    
+    try:
+
+        creado = crear_oferta(
+            id_negocio,
+            id_sucursal,
+            puesto,
+            descripcion,
+            jornada,
+            vacantes,
+        )
+
+        if creado:
+
+            return jsonify({
+                "resultado": "Oferta subida"
+            }), 201
+
+        return jsonify({
+            "resultado": "No se pudo crear la oferta"
+        }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 
 

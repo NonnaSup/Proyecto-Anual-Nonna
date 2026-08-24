@@ -1,15 +1,12 @@
 from src.conexion import obtener_conexion
+from datetime import date
 
 def crear_receta(
-    nombre,
-    descripcion,
     id_usuario,
-    fecha_publicacion,
-    tiempo,
-    visibilidad,
-    estado,
+    titulo,
+    descripcion,
+    tiempo_preparacion,
     porciones,
-    tiempo_preparacion     
 ):
 
     conexion = obtener_conexion()
@@ -18,30 +15,28 @@ def crear_receta(
     consulta = """
     INSERT INTO Receta
     (
-        nombre,
-        descripcion,
         id_usuario,
-        fecha_publicacion,
-        tiempo,
-        visibilidad,
-        estado,
+        titulo,
+        descripcion,
+        tiempo_preparacion,
         porciones,
-        tiempo_preparacion
+        estado,
+        visibilidad,
+        fecha_publicacion
     )
     VALUES
-    (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    (%s,%s,%s,%s,%s,%s,%s,%s)
     """
 
     valores = (
-        nombre,
-        descripcion,
         id_usuario,
-        fecha_publicacion,
-        tiempo,
-        visibilidad,
-        estado,
+        titulo,
+        descripcion,
+        tiempo_preparacion,
         porciones,
-        tiempo_preparacion
+        True,
+        True,
+        date.today()    
     )
 
     cursor.execute(consulta, valores)
@@ -55,6 +50,91 @@ def crear_receta(
 
     return filas > 0
 
+def crear_pasos_ingredientes_imagen(
+    id_receta,
+    numero,
+    descripcion,
+    cantidad,
+    unidad,
+    TEXTo_libre,
+    ruta,
+    principal,
+    orden
+):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    consulta = """
+    INSERT INTO Paso
+    (
+        id_receta,
+        numero,
+        descripcion
+    )
+    VALUES
+    (%s,%s,%s)
+    """
+
+    valores = (
+        id_receta,
+        numero,
+        descripcion
+    )
+
+    consulta2 = """
+    INSERT INTO RecetaIngrediente
+    (
+        id_receta,
+        cantidad,
+        unidad,
+        TEXTo_libre
+    )
+    VALUES
+    (%s,%s,%s,%s)
+    """
+
+    valores2 = (
+        id_receta,
+        cantidad,
+        unidad,
+        TEXTo_libre
+    )
+
+    consulta3 = """
+    INSERT INTO Imagen
+    (
+        id_receta,
+        ruta,
+        principal,
+        orden
+    )
+    VALUES
+    (%s,%s,%s,%s)
+    """
+
+    valores3 = (
+        id_receta,
+        ruta,
+        principal,
+        orden
+    )
+
+    cursor.execute(consulta, valores)
+    cursor.execute(consulta2, valores2)
+    cursor.execute(consulta3, valores3)
+
+
+    conexion.commit()
+
+    filas = cursor.rowcount
+
+    cursor.close()
+    conexion.close()
+
+    return filas > 0
+
+###///
 
 def eliminar_receta(id_receta):
 
