@@ -12,8 +12,7 @@ from modules.usuario import (
 
 
 from modules.receta import (
-    crear_receta,
-    crear_pasos_ingredientes_imagen
+    crear_receta
 )
 
 
@@ -701,66 +700,6 @@ def nueva_receta():
         return jsonify({
             "error": str(e)
         }), 500
-
-
-"""
-@app.route("/nueva_receta", methods=["POST"])
-def nueva_receta():
-
-    datos = request.get_json()
-
-    id_usuario = datos.get("id_usuario")
-    titulo = datos.get("titulo")
-    descripcion = datos.get("descripcion")
-    tiempo_preparacion = datos.get("tiempo_preparacion")
-    porciones = datos.get("porciones")
-
-    numero = datos.get("numero")
-    descripcion_paso = datos.get("descripcion_paso")
-    cantidad = datos.get("cantidad")
-    unidad = datos.get("unidad")
-    TEXTo_libre = datos.get("TEXTo_libre")
-    ruta = datos.get("ruta")
-    principal = datos.get("principal")
-    orden = datos.get("orden")
-    
-    try:
-
-        id_receta = crear_receta(
-            id_usuario,
-            titulo,
-            descripcion,
-            tiempo_preparacion,
-            porciones
-        )
-
-        crear_pasos_ingredientes_imagen(
-            id_receta,
-            numero,
-            descripcion_paso,
-            cantidad,
-            unidad,
-            TEXTo_libre,
-            ruta,
-            principal,
-            orden
-        )
-
-        return jsonify({
-                "resultado": "Receta subida",
-
-            }), 201
-
-    except Exception as e:
-
-        return jsonify({
-            "error": str(e)
-        }), 500
-"""
-
-
-
-
 
 
 
