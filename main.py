@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 
 from modules.usuario import (
@@ -40,6 +41,7 @@ from modules.empleo import (
 )
 
 app = Flask(__name__)
+CORS(app) 
 
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
