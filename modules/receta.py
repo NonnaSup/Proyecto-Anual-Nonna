@@ -1,6 +1,9 @@
 from src.conexion import obtener_conexion
 from datetime import date
 
+def crear_pasos_ingredientes_imagen():
+    pass
+
 def crear_receta(
     id_usuario,
     titulo,
