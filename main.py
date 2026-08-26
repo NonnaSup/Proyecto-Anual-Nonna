@@ -7,12 +7,14 @@ from modules.usuario import (
     listar_usuarios,
     buscar_usuario_por_id,
     actualizar_usuario,
-    eliminar_usuario
+    eliminar_usuario,
+    iniciar_sesion
 )
 
 
 from modules.receta import (
-    crear_receta
+    crear_receta,
+    crear_pasos_ingredientes_imagen
 )
 
 
@@ -97,6 +99,46 @@ def nuevo_usuario():
         return jsonify({
             "resultado": "No se pudo crear el usuario"
         }), 400
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
+# -----------------------------------------
+# INICIAR SESION
+# -----------------------------------------
+
+@app.route("/iniciar_sesion", methods=["POST"])
+def iniciar_sesion_api():
+
+    datos = request.get_json()
+
+    correo = datos.get("correo")
+    clave = datos.get("clave")
+
+    if not correo or not clave:
+
+        return jsonify({
+            "error": "Faltan datos obligatorios"
+        }), 400
+
+    try:
+
+        usuario = iniciar_sesion(correo, clave)
+
+        if usuario:
+
+            return jsonify({
+                "resultado": "Sesion iniciada",
+                "usuario": usuario
+            }), 200
+
+        return jsonify({
+            "error": "Correo o contraseña incorrectos"
+        }), 401
 
     except Exception as e:
 
@@ -700,6 +742,66 @@ def nueva_receta():
         return jsonify({
             "error": str(e)
         }), 500
+
+
+"""
+@app.route("/nueva_receta", methods=["POST"])
+def nueva_receta():
+
+    datos = request.get_json()
+
+    id_usuario = datos.get("id_usuario")
+    titulo = datos.get("titulo")
+    descripcion = datos.get("descripcion")
+    tiempo_preparacion = datos.get("tiempo_preparacion")
+    porciones = datos.get("porciones")
+
+    numero = datos.get("numero")
+    descripcion_paso = datos.get("descripcion_paso")
+    cantidad = datos.get("cantidad")
+    unidad = datos.get("unidad")
+    TEXTo_libre = datos.get("TEXTo_libre")
+    ruta = datos.get("ruta")
+    principal = datos.get("principal")
+    orden = datos.get("orden")
+    
+    try:
+
+        id_receta = crear_receta(
+            id_usuario,
+            titulo,
+            descripcion,
+            tiempo_preparacion,
+            porciones
+        )
+
+        crear_pasos_ingredientes_imagen(
+            id_receta,
+            numero,
+            descripcion_paso,
+            cantidad,
+            unidad,
+            TEXTo_libre,
+            ruta,
+            principal,
+            orden
+        )
+
+        return jsonify({
+                "resultado": "Receta subida",
+
+            }), 201
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+"""
+
+
+
+
 
 
 

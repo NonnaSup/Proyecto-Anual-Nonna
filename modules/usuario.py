@@ -1,5 +1,6 @@
 from src.conexion import obtener_conexion
 from datetime import date
+from werkzeug.security import generate_password_hash, check_password_hash
 
 def crear_usuario(
     nombre,
@@ -11,6 +12,9 @@ def crear_usuario(
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()
+
+    # Hasheamos la contraseña antes de guardarla, nunca se guarda en texto plano
+    clave_hasheada = generate_password_hash(clave)
 
     consulta = """
     INSERT INTO Usuario
@@ -34,7 +38,7 @@ def crear_usuario(
         nombre,
         nombre_usuario,
         correo,
-        clave,
+        clave_hasheada,
         fecha_nacimiento,
         None,               # foto_perfil
         None,               # biografia
@@ -194,9 +198,12 @@ def iniciar_sesion(correo, clave):
 
         return False
 
-    if usuario["clave"] != clave:
+    # Comparamos la clave ingresada contra el hash guardado, no en texto plano
+    if not check_password_hash(usuario["clave"], clave):
 
         return False
 
-    return usuario
+    # Sacamos la clave (aunque sea el hash) antes de devolver el usuario al front
+    usuario.pop("clave", None)
 
+    return usuario
