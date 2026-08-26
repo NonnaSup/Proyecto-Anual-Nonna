@@ -2,18 +2,10 @@ from src.conexion import obtener_conexion
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 
-def crear_usuario(
-    nombre,
-    nombre_usuario,
-    correo,
-    clave,
-    fecha_nacimiento
-):
-
+def crear_usuario(nombre, nombre_usuario, correo, clave, fecha_nacimiento):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
-    # Hasheamos la contraseña antes de guardarla, nunca se guarda en texto plano
     clave_hasheada = generate_password_hash(clave)
 
     consulta = """
@@ -40,15 +32,14 @@ def crear_usuario(
         correo,
         clave_hasheada,
         fecha_nacimiento,
-        None,               # foto_perfil
-        None,               # biografia
-        False,              # cuenta_verificada
-        "Activo",           # estado
-        date.today()        # fecha_registro
+        None,
+        None,
+        False,
+        "Activo",
+        date.today()
     )
 
     cursor.execute(consulta, valores)
-
     conexion.commit()
 
     filas = cursor.rowcount
@@ -60,9 +51,7 @@ def crear_usuario(
 
 
 def listar_usuarios():
-
     conexion = obtener_conexion()
-
     cursor = conexion.cursor(dictionary=True)
 
     consulta = """
@@ -72,11 +61,11 @@ def listar_usuarios():
         nombre_usuario,
         correo
     FROM Usuario
+    WHERE estado != 'Eliminado'
     ORDER BY id_usuario;
     """
 
     cursor.execute(consulta)
-
     usuarios = cursor.fetchall()
 
     cursor.close()
@@ -84,19 +73,18 @@ def listar_usuarios():
 
     return usuarios
 
-def buscar_usuario_por_id(id_usuario):
 
+def buscar_usuario_por_id(id_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
 
     sql = """
         SELECT *
         FROM Usuario
-        WHERE id_usuario = %s
+        WHERE id_usuario = %s AND estado != 'Eliminado'
     """
 
     cursor.execute(sql, (id_usuario,))
-
     usuario = cursor.fetchone()
 
     cursor.close()
@@ -104,19 +92,18 @@ def buscar_usuario_por_id(id_usuario):
 
     return usuario
 
-def buscar_usuario_por_nombre(nombre_usuario):
 
+def buscar_usuario_por_nombre(nombre_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
 
     sql = """
         SELECT *
         FROM Usuario
-        WHERE nombre_usuario = %s
+        WHERE nombre_usuario = %s AND estado != 'Eliminado'
     """
 
     cursor.execute(sql, (nombre_usuario,))
-
     usuario = cursor.fetchone()
 
     cursor.close()
@@ -124,8 +111,28 @@ def buscar_usuario_por_nombre(nombre_usuario):
 
     return usuario
 
-def actualizar_usuario(id_usuario, nombre, biografia):
 
+def buscar_usuario_por_credencial(identificador):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    sql = """
+        SELECT *
+        FROM Usuario
+        WHERE (correo = %s OR nombre_usuario = %s)
+          AND estado != 'Eliminado'
+    """
+
+    cursor.execute(sql, (identificador, identificador))
+    usuario = cursor.fetchone()
+
+    cursor.close()
+    conexion.close()
+
+    return usuario
+
+
+def actualizar_usuario(id_usuario, nombre, biografia):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
@@ -137,7 +144,6 @@ def actualizar_usuario(id_usuario, nombre, biografia):
     """
 
     cursor.execute(sql, (nombre, biografia, id_usuario))
-
     conexion.commit()
 
     actualizado = cursor.rowcount > 0
@@ -147,8 +153,8 @@ def actualizar_usuario(id_usuario, nombre, biografia):
 
     return actualizado
 
-def eliminar_usuario(id_usuario):
 
+def eliminar_usuario(id_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
@@ -159,7 +165,6 @@ def eliminar_usuario(id_usuario):
     """
 
     cursor.execute(sql, (id_usuario,))
-
     conexion.commit()
 
     eliminado = cursor.rowcount > 0
@@ -169,41 +174,19 @@ def eliminar_usuario(id_usuario):
 
     return eliminado
 
-def buscar_usuario_por_correo(correo):
 
-    conexion = obtener_conexion()
-
-    cursor = conexion.cursor(dictionary=True)
-
-    sql = """
-        SELECT *
-        FROM Usuario
-        WHERE correo = %s
-    """
-
-    cursor.execute(sql, (correo,))
-
-    usuario = cursor.fetchone()
-
-    cursor.close()
-    conexion.close()
-
-    return usuario
-
-def iniciar_sesion(correo, clave):
-
-    usuario = buscar_usuario_por_correo(correo)
+def iniciar_sesion(credencial, clave):
+    # 'credencial' acepta tanto el correo como el nombre de usuario (ej: Pepito32)
+    usuario = buscar_usuario_por_credencial(credencial)
 
     if usuario is None:
-
         return False
 
-    # Comparamos la clave ingresada contra el hash guardado, no en texto plano
+    # Compara el texto plano que viene de Ionic con el hash guardado en MySQL
     if not check_password_hash(usuario["clave"], clave):
-
         return False
 
-    # Sacamos la clave (aunque sea el hash) antes de devolver el usuario al front
+    # Limpia la clave antes de enviarla de vuelta al frontend
     usuario.pop("clave", None)
 
     return usuario
