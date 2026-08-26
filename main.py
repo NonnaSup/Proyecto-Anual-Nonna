@@ -1,6 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask
 from flask_cors import CORS
 
+app = Flask(__name__)
+
+# Habilita CORS para todas las rutas y orígenes
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 from modules.usuario import (
     crear_usuario,
