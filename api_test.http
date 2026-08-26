@@ -244,8 +244,63 @@ Content-Type: application/json
 # ---------------------------------RECETA.PY---------------------------------------
 # ----------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------
+### Nueva receta
 
+POST https://proyecto-anual-nonna-production.up.railway.app/nueva_receta
+Content-Type: application/json
 
+{
+    "id_usuario": "2",
+    "titulo": "Receta Ejemplo",
+    "descripcion": "Una receta para ejemplo, hola welco",
+    "tiempo_preparacion": "003000",
+    "porciones": "3"
+    ,
+    "pasos": [
+        {
+            "numero": 1,
+            "descripcion_paso": "Preparar la comida"
+        },
+        {
+            "numero": 2,
+            "descripcion_paso": "Disfrutar"
+        },
+        {
+            "numero": 3,
+            "descripcion_paso": "Dar me gusta"
+        }
+    ]
+
+    ,
+    "ingredientes": [
+        {
+            "id_ingrediente": 1,
+            "cantidad": 500,
+            "unidad": "gramos",
+            "TEXTo_libre": "Azucar marca ejemplo"
+        },
+        {
+            "id_ingrediente": 2,
+            "cantidad": 250,
+            "unidad": "litros",
+            "TEXTo_libre": "Leche de vaca - 100% vacuna 0% humana"
+        }
+    ]
+
+    ,
+    "imagenes": [
+        {
+            "ruta": "/imagenes/ejemplo.jpg",
+            "principal": 1,
+            "orden": 1
+        },
+        {
+            "ruta": "/imagenes/ejemplo2.jpg",
+            "principal": 0,
+            "orden": 2
+        }
+    ]
+}
 
 
 

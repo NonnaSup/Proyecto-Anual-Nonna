@@ -77,18 +77,20 @@ def crear_receta(
         INSERT INTO RecetaIngrediente
         (
             id_receta,
+            id_ingrediente,
             cantidad,
             unidad,
             TEXTo_libre
         )
         VALUES
-        (%s,%s,%s,%s)
+        (%s,%s,%s,%s,%s)
         """
 
         for ingrediente in ingredientes:
             
             valores_ingredientes = (
                 id_receta,
+                ingrediente["id_ingrediente"],
                 ingrediente["cantidad"],
                 ingrediente["unidad"],
                 ingrediente["TEXTo_libre"]
