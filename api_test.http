@@ -26,9 +26,23 @@ Content-Type: application/json
     "fecha_nacimiento": "2007-02-14"
 }
 
-### Iniciar sesion
+### Iniciar sesión (con Correo)
+POST https://proyecto-anual-nonna-production.up.railway.app/iniciar_sesion
+Content-Type: application/json
 
+{
+    "correo": "fabricio.torta@gmail.com",
+    "clave": "Alcal4209."
+}
 
+### Iniciar sesión (con Nombre de Usuario)
+POST https://proyecto-anual-nonna-production.up.railway.app/iniciar_sesion
+Content-Type: application/json
+
+{
+    "correo": "Blito",
+    "clave": "12345678"
+}
 
 
 

@@ -176,17 +176,23 @@ def eliminar_usuario(id_usuario):
 
 
 def iniciar_sesion(credencial, clave):
-    # 'credencial' acepta tanto el correo como el nombre de usuario (ej: Pepito32)
+    print(f"\n[DEBUG] Intentando login con credencial: '{credencial}' y clave: '{clave}'")
+    
     usuario = buscar_usuario_por_credencial(credencial)
 
     if usuario is None:
+        print("[DEBUG] ERROR: El usuario o correo NO existe en la base de datos.")
         return False
 
-    # Compara el texto plano que viene de Ionic con el hash guardado en MySQL
-    if not check_password_hash(usuario["clave"], clave):
+    print(f"[DEBUG] Usuario encontrado: {usuario['nombre_usuario']}")
+    print(f"[DEBUG] Hash en DB: {usuario['clave']}")
+
+    coincide = check_password_hash(usuario["clave"], clave)
+    print(f"[DEBUG] ¿La contraseña coincide?: {coincide}")
+
+    if not coincide:
+        print("[DEBUG] ERROR: La contraseña no coincide con el hash.")
         return False
 
-    # Limpia la clave antes de enviarla de vuelta al frontend
     usuario.pop("clave", None)
-
     return usuario
