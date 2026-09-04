@@ -1,10 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os
+import json
+import uuid
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
 # Habilita CORS para responder al cliente Ionic en localhost o producción
 CORS(app, resources={r"/*": {"origins": "*"}})
+UPLOAD_FOLDER = os.path.join(app.root_path, "static", "imagenes")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 from modules.usuario import (
     crear_usuario,
@@ -321,16 +327,32 @@ def eliminar_oferta_api(id_oferta):
 
 @app.route("/nueva_receta", methods=["POST"])
 def nueva_receta():
-    datos = request.get_json() or {}
-    id_usuario = datos.get("id_usuario")
-    titulo = datos.get("titulo")
-    descripcion = datos.get("descripcion")
-    tiempo_preparacion = datos.get("tiempo_preparacion")
-    porciones = datos.get("porciones")
+    id_usuario = request.form.get("id_usuario")
+    titulo = request.form.get("titulo")
+    descripcion = request.form.get("descripcion")
+    tiempo_preparacion = request.form.get("tiempo_preparacion")
+    porciones = request.form.get("porciones")
 
-    pasos = datos.get("pasos")
-    ingredientes = datos.get("ingredientes")
-    imagenes = datos.get("imagenes")
+    try:
+        pasos = json.loads(request.form.get("pasos", "[]"))
+        ingredientes = json.loads(request.form.get("ingredientes", "[]"))
+    except (TypeError, json.JSONDecodeError):
+        return jsonify({"error": "Formato inválido en pasos o ingredientes"}), 400
+
+    imagenes = []
+    archivos = request.files.getlist("imagenes")
+
+    for indice, archivo in enumerate(archivos):
+        if archivo and archivo.filename:
+            nombre_seguro = secure_filename(archivo.filename)
+            nombre_unico = f"{uuid.uuid4().hex}_{nombre_seguro}"
+            archivo.save(os.path.join(UPLOAD_FOLDER, nombre_unico))
+
+            imagenes.append({
+                "ruta": f"/static/imagenes/{nombre_unico}",
+                "principal": 1 if indice == 0 else 0,
+                "orden": indice + 1
+            })
 
     try:
         receta = crear_receta(
@@ -338,7 +360,7 @@ def nueva_receta():
             porciones, pasos, ingredientes, imagenes
         )
         if receta:
-            return jsonify({"resultado": "receta subida"}), 201
+            return jsonify({"resultado": "receta subida", "id_receta": receta}), 201
         return jsonify({"resultado": "No se pudo crear la receta"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
