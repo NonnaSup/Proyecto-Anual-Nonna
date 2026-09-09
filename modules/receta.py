@@ -13,7 +13,7 @@ def crear_receta(
     pasos,
     ingredientes,
     imagenes
-):
+    ):
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()
@@ -75,6 +75,9 @@ def crear_receta(
             cursor.execute(consulta_pasos, valores_paso)
 
 
+        consulta_co_ingr = """
+        SELECT nombre, id_ingrediente FROM Ingrediente
+        """
 
         consulta_ingredientes = """
         INSERT INTO RecetaIngrediente
