@@ -1,9 +1,6 @@
 from src.conexion import obtener_conexion
 from datetime import date
 
-def crear_pasos_ingredientes_imagen():
-    pass
-
 def crear_receta(
     id_usuario,
     titulo,
@@ -76,8 +73,12 @@ def crear_receta(
 
 
         consulta_co_ingr = """
-        SELECT nombre, id_ingrediente FROM Ingrediente
+        SELECT nombre, id_ingrediente
+        FROM Ingrediente
         """
+
+        cursor.execute(consulta_co_ingr)
+        ingredientes_bd = cursor.fetchall()
 
         consulta_ingredientes = """
         INSERT INTO RecetaIngrediente
@@ -93,18 +94,48 @@ def crear_receta(
         """
 
         for ingrediente in ingredientes:
-            
+
+            nombre_ing = ingrediente["TEXTo_libre"]
+
+            id_ingrediente = None
+
+            for nombre, id_bd in ingredientes_bd:
+
+                if nombre_ing.strip().lower() == nombre.strip().lower():
+                        id_ingrediente = id_bd
+                        break
+
+            if id_ingrediente is None:
+
+                nuevo_ingrediente = """
+                INSERT INTO Ingrediente
+                (
+                    nombre,
+                    oficial
+                )
+                VALUES
+                (%s, %s)
+                """
+
+                cursor.execute(
+                     nuevo_ingrediente,
+                     (nombre_ing, False)
+                )
+                id_ingrediente = cursor.lastrowid
+
+
             valores_ingredientes = (
                 id_receta,
-                ingrediente["id_ingrediente"],
+                id_ingrediente,
                 ingrediente["cantidad"],
                 ingrediente["unidad"],
                 ingrediente["TEXTo_libre"]
             )
-
-            cursor.execute(consulta_ingredientes, valores_ingredientes)
-
-
+                        
+            cursor.execute(
+                consulta_ingredientes,
+                valores_ingredientes
+            )
 
         consulta_imagenes = """
         INSERT INTO Imagen
