@@ -22,8 +22,7 @@ from modules.usuario import (
 )
 
 from modules.receta import (
-    crear_receta,
-    crear_pasos_ingredientes_imagen
+    crear_receta
 )
 
 from modules.negocio import (
