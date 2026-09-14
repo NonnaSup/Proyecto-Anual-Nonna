@@ -22,7 +22,8 @@ from modules.usuario import (
 )
 
 from modules.receta import (
-    crear_receta
+    crear_receta,
+    listar_recetas_previa
 )
 
 from modules.negocio import (
@@ -362,6 +363,20 @@ def nueva_receta():
             return jsonify({"resultado": "receta subida", "id_receta": receta}), 201
         return jsonify({"resultado": "No se pudo crear la receta"}), 400
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/recetas_previa", methods=["GET"])
+def recetas_previa():
+
+    try:
+
+        recetas = listar_recetas_previa()
+
+        return jsonify(recetas), 200
+
+    except Exception as e:
+
         return jsonify({"error": str(e)}), 500
 
 

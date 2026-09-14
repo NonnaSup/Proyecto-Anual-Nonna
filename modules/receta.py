@@ -199,35 +199,88 @@ def eliminar_receta(id_receta):
 
     return eliminado
 
-
-def listar_receta():
+"""
+def listar_receta_previa():
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
-    consulta = """
+    consulta =
     SELECT 
-        id_receta, 
-        nombre,
-        tiempo,
-        visibilidad,
-        estado,
-        porciones,
-        fecha_publicacion,
+        id_receta,
+        id_usuario, 
+        titulo,
         descripcion
     FROM Receta
-    ORDER BY id_receta;
-    """
 
     cursor.execute(consulta)
 
     recetas = cursor.fetchall()
 
+    consultaImg =
+    SELECT 
+        id_imagen,
+        ruta
+    FROM Imagen WHERE id_receta =%s AND principal = 1
+
+    cursor.execute(consultaImg)
+
+    imagenes = cursor.fetchall()
+
+    consultaUsu =
+    SELECT 
+        nombre_usuario,
+        foto_perfil
+    FROM Usuario AND id_usuario
+
+    cursor.execute(consultaUsu)
+
+    usuario = cursor.fetchall()  
+
     cursor.close()
     conexion.close()
 
-    return recetas
+    return id_receta, imagenes, usuario
+"""
 
+def listar_recetas_previa():
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    consulta = """
+    SELECT
+        r.id_receta,
+        r.id_usuario,
+        r.titulo,
+        r.descripcion,
+        u.nombre_usuario,
+        u.foto_perfil,
+        i.id_imagen,
+        i.ruta AS imagen_principal
+
+    FROM Receta AS r
+
+    INNER JOIN Usuario AS u
+        ON r.id_usuario = u.id_usuario
+
+    LEFT JOIN Imagen AS i
+        ON r.id_receta = i.id_receta
+        AND i.principal = 1
+    """
+
+    try:
+
+        cursor.execute(consulta)
+
+        recetas = cursor.fetchall()
+
+        return recetas
+
+    finally:
+
+        cursor.close()
+        conexion.close()
 
 def buscar_receta(id_receta):
 
