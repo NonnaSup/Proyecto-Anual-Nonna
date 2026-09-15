@@ -373,12 +373,28 @@ def recetas_previa():
 
         recetas = listar_recetas_previa()
 
-        return jsonify(recetas), 200
+        resultado = []
+
+        for receta in recetas:
+
+            resultado.append({
+                "id_receta": receta[0],
+                "id_usuario": receta[1],
+                "titulo": receta[2],
+                "descripcion": receta[3],
+                "nombre_usuario": receta[4],
+                "foto_perfil": receta[5],
+                "id_imagen": receta[6],
+                "imagen_principal": receta[7]
+            })
+
+        return jsonify(resultado), 200
 
     except Exception as e:
 
-        return jsonify({"error": str(e)}), 500
-
+        return jsonify({
+            "error": str(e)
+        }), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
