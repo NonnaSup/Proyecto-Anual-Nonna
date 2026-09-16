@@ -323,7 +323,7 @@ def buscar_usuario_por_nombre(nombre):
 
     return usuario
 
-def listar_recetas_previa():
+def listar_recetas_previa(id_usuario=None):
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()
@@ -354,7 +354,8 @@ def listar_recetas_previa():
             SELECT COUNT(*)
             FROM Comentario c
             WHERE c.id_receta = r.id_receta
-        ) AS comentarios
+        ) AS comentarios,
+        mi.`like` AS mi_reaccion
 
     FROM Receta AS r
 
@@ -364,15 +365,81 @@ def listar_recetas_previa():
     LEFT JOIN Imagen AS i
         ON r.id_receta = i.id_receta
         AND i.principal = 1
+
+    LEFT JOIN Reaccion AS mi
+        ON mi.id_receta = r.id_receta
+        AND mi.id_usuario = %s
     """
 
     try:
 
-        cursor.execute(consulta)
+        cursor.execute(consulta, (id_usuario,))
 
         recetas = cursor.fetchall()
 
         return recetas
+
+    finally:
+
+        cursor.close()
+        conexion.close()
+        
+def reaccionar_receta(id_usuario, id_receta, like):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+
+        consulta_buscar = """
+            SELECT id_reaccion, `like`
+            FROM Reaccion
+            WHERE id_usuario = %s AND id_receta = %s
+        """
+
+        cursor.execute(consulta_buscar, (id_usuario, id_receta))
+        existente = cursor.fetchone()
+
+        if existente is None:
+
+            consulta_insert = """
+                INSERT INTO Reaccion (id_usuario, id_receta, `like`, fecha)
+                VALUES (%s, %s, %s, %s)
+            """
+
+            cursor.execute(consulta_insert, (id_usuario, id_receta, like, date.today()))
+            resultado = "creada"
+
+        else:
+
+            id_reaccion, like_actual = existente
+
+            if like_actual == like:
+
+                # Tocó el mismo botón de nuevo -> saca la reacción
+                consulta_delete = "DELETE FROM Reaccion WHERE id_reaccion = %s"
+                cursor.execute(consulta_delete, (id_reaccion,))
+                resultado = "eliminada"
+
+            else:
+
+                # Cambió de like a dislike o viceversa
+                consulta_update = """
+                    UPDATE Reaccion
+                    SET `like` = %s, fecha = %s
+                    WHERE id_reaccion = %s
+                """
+                cursor.execute(consulta_update, (like, date.today(), id_reaccion))
+                resultado = "actualizada"
+
+        conexion.commit()
+
+        return resultado
+
+    except Exception:
+
+        conexion.rollback()
+        raise
 
     finally:
 

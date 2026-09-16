@@ -23,7 +23,8 @@ from modules.usuario import (
 
 from modules.receta import (
     crear_receta,
-    listar_recetas_previa
+    listar_recetas_previa,
+    reaccionar_receta
 )
 
 from modules.negocio import (
@@ -365,12 +366,15 @@ def nueva_receta():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/recetas_previa", methods=["GET"])
 def recetas_previa():
 
     try:
 
-        recetas = listar_recetas_previa()
+        id_usuario = request.args.get("id_usuario", type=int)
+
+        recetas = listar_recetas_previa(id_usuario)
 
         resultado = []
 
@@ -387,7 +391,8 @@ def recetas_previa():
                 "imagen_principal": receta[7],
                 "likes": receta[8],
                 "dislikes": receta[9],
-                "comentarios": receta[10]
+                "comentarios": receta[10],
+                "mi_reaccion": receta[11]
             })
 
         return jsonify(resultado), 200
@@ -397,6 +402,24 @@ def recetas_previa():
         return jsonify({
             "error": str(e)
         }), 500
-        
+
+@app.route("/reaccionar_receta", methods=["POST"])
+def reaccionar_receta_api():
+
+    datos = request.get_json() or {}
+    id_usuario = datos.get("id_usuario")
+    id_receta = datos.get("id_receta")
+    like = datos.get("like")
+
+    if id_usuario is None or id_receta is None or like is None:
+        return jsonify({"error": "Faltan datos obligatorios"}), 400
+
+    try:
+        resultado = reaccionar_receta(id_usuario, id_receta, like)
+        return jsonify({"resultado": resultado}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)
