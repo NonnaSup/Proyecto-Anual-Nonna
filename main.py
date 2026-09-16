@@ -365,7 +365,6 @@ def nueva_receta():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/recetas_previa", methods=["GET"])
 def recetas_previa():
 
@@ -385,7 +384,10 @@ def recetas_previa():
                 "nombre_usuario": receta[4],
                 "foto_perfil": receta[5],
                 "id_imagen": receta[6],
-                "imagen_principal": receta[7]
+                "imagen_principal": receta[7],
+                "likes": receta[8],
+                "dislikes": receta[9],
+                "comentarios": receta[10]
             })
 
         return jsonify(resultado), 200
@@ -395,6 +397,6 @@ def recetas_previa():
         return jsonify({
             "error": str(e)
         }), 500
-
+        
 if __name__ == "__main__":
     app.run(debug=True)

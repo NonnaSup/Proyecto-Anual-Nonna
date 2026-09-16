@@ -322,3 +322,59 @@ def buscar_usuario_por_nombre(nombre):
     conexion.close()
 
     return usuario
+
+def listar_recetas_previa():
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    consulta = """
+    SELECT
+        r.id_receta,
+        r.id_usuario,
+        r.titulo,
+        r.descripcion,
+        u.nombre_usuario,
+        u.foto_perfil,
+        i.id_imagen,
+        i.ruta AS imagen_principal,
+        (
+            SELECT COUNT(*)
+            FROM Reaccion re
+            WHERE re.id_receta = r.id_receta
+              AND re.`like` = 1
+        ) AS likes,
+        (
+            SELECT COUNT(*)
+            FROM Reaccion re
+            WHERE re.id_receta = r.id_receta
+              AND re.`like` = 0
+        ) AS dislikes,
+        (
+            SELECT COUNT(*)
+            FROM Comentario c
+            WHERE c.id_receta = r.id_receta
+        ) AS comentarios
+
+    FROM Receta AS r
+
+    INNER JOIN Usuario AS u
+        ON r.id_usuario = u.id_usuario
+
+    LEFT JOIN Imagen AS i
+        ON r.id_receta = i.id_receta
+        AND i.principal = 1
+    """
+
+    try:
+
+        cursor.execute(consulta)
+
+        recetas = cursor.fetchall()
+
+        return recetas
+
+    finally:
+
+        cursor.close()
+        conexion.close()
