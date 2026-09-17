@@ -319,7 +319,7 @@ Content-Type: application/json
 
 ### Nueva receta
 
-GET https://proyecto-anual-nonna-production.up.railway.app/listar_recetas_previa
+GET https://proyecto-anual-nonna-production.up.railway.app/recetas_previa
 
 
 

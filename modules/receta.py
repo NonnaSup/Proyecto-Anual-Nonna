@@ -445,3 +445,84 @@ def reaccionar_receta(id_usuario, id_receta, like):
 
         cursor.close()
         conexion.close()
+
+def traer_receta(id_receta):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    consulta1 = """
+    SELECT
+        r.id_receta,
+        r.id_usuario,
+        r.titulo,
+        r.descripcion,
+        r.tiempo_preparacion,
+        r.porciones,
+        u.nombre_usuario,
+        u.foto_perfil
+    FROM Receta AS r
+    INNER JOIN Usuario AS u
+        ON r.id_usuario = u.id_usuario
+    WHERE r.id_receta = %s
+    """
+
+    consulta2 = """
+    SELECT
+        ri.id_ingrediente,
+        ri.cantidad,
+        ri.unidad,
+        ri.TEXTo_libre
+    FROM RecetaIngrediente AS ri
+    WHERE ri.id_receta = %s
+    """
+
+    consulta3 = """
+    SELECT
+        p.numero,
+        p.descripcion_paso
+    FROM Paso AS p
+    WHERE p.id_receta = %s
+    ORDER BY p.numero
+    """
+
+    consulta4 = """
+    SELECT
+        i.id_imagen,
+        i.ruta
+    FROM Imagen AS i
+    WHERE i.id_receta = %s
+    AND i.principal = 1
+    """
+
+    try:
+
+        # Datos principales de la receta
+        cursor.execute(consulta1, (id_receta,))
+        datos_receta = cursor.fetchone()
+
+        # Ingredientes
+        cursor.execute(consulta2, (id_receta,))
+        ingredientes = cursor.fetchall()
+
+        # Pasos
+        cursor.execute(consulta3, (id_receta,))
+        pasos = cursor.fetchall()
+
+        # Imagen principal
+        cursor.execute(consulta4, (id_receta,))
+        imagen = cursor.fetchone()
+
+        receta = {
+            "receta": datos_receta,
+            "ingredientes": ingredientes,
+            "pasos": pasos,
+            "imagen": imagen
+        }
+
+        return receta
+
+    finally:
+
+        cursor.close()
+        conexion.close()
