@@ -410,40 +410,23 @@ def receta_amplia():
 
     try:
 
-        id_receta = request.args.get("id_usuario", type=int)
+        id_receta = request.args.get("id_receta", type=int)
+
+        if id_receta is None:
+            return jsonify({
+                "error": "Falta el id_receta"
+            }), 400
 
         receta = traer_receta(id_receta)
 
-        resultado = []
-
-        for rec in receta:
-
-            resultado.append({
-                "id_receta": receta[0],
-                "id_usuario": receta[1],
-                "titulo": receta[2],
-                "descripcion": receta[3],
-                "tiempo_preparacion": receta[4],
-                "porciones": receta[5],
-                "nombre_usuario": receta[6],
-                "foto_perfil": receta[7],
-                "id_ingrediente": receta[8],
-                "cantidad": receta[9],
-                "unidad": receta[10],
-                "TEXTo_libre": receta[11],
-                "numero": receta[12],
-                "descripcion_paso": receta[13],
-                "id_imagen": receta[14],
-                "ruta": receta[15],
-            })
-
-        return jsonify(resultado), 200
+        return jsonify(receta), 200
 
     except Exception as e:
 
         return jsonify({
             "error": str(e)
         }), 500
+
         
 
 @app.route("/reaccionar_receta", methods=["POST"])
