@@ -45,6 +45,10 @@ from modules.empleo import (
     eliminar_oferta
 )
 
+from modules.usuario_google import{
+    iniciar_sesion_google
+}
+
 # -----------------------------------------
 # RUTA PRINCIPAL
 # -----------------------------------------
