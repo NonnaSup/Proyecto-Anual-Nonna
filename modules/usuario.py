@@ -1,5 +1,4 @@
 from src.conexion import obtener_conexion
-from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 
 def crear_usuario(nombre, nombre_usuario, correo, clave, fecha_nacimiento):

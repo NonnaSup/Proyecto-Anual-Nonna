@@ -21,6 +21,14 @@ from modules.usuario import (
     iniciar_sesion
 )
 
+from modules.usuario_google import (
+    buscar_usuario_google_por_uid,
+    buscar_usuario_google_por_correo,
+    buscar_usuario_normal_por_correo,
+    crear_usuario_google,
+    actualizar_ultimo_inicio_sesion_google
+)
+
 from modules.receta import (
     crear_receta,
     listar_recetas_previa,
@@ -44,10 +52,6 @@ from modules.empleo import (
     listar_ofertas_activas,
     eliminar_oferta
 )
-
-from modules.usuario_google import{
-    iniciar_sesion_google
-}
 
 # -----------------------------------------
 # RUTA PRINCIPAL
@@ -106,6 +110,83 @@ def iniciar_sesion_api():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+# -----------------------------------------
+# INICIO DE SESIÓN CON GOOGLE
+# -----------------------------------------
+
+@app.route("/iniciar_sesion_google", methods=["POST", "OPTIONS"])
+def iniciar_sesion_google_api():
+
+    if request.method == "OPTIONS":
+        return "", 200
+
+    datos = request.get_json() or {}
+
+    firebase_uid = datos.get("firebase_uid")
+    nombre = datos.get("nombre")
+    correo = datos.get("correo")
+    foto_perfil = datos.get("foto_perfil")
+    confirmar_google = datos.get("confirmar_google", False)
+
+    if not firebase_uid or not nombre or not correo:
+        return jsonify({
+            "error": "Faltan datos obligatorios"
+        }), 400
+
+    try:
+
+        usuario_google = buscar_usuario_google_por_uid(firebase_uid)
+
+        if usuario_google:
+
+            actualizar_ultimo_inicio_sesion_google(firebase_uid)
+
+            return jsonify({
+                "resultado": "Sesion iniciada con Google",
+                "usuario_google": usuario_google
+            }), 200
+
+        usuario_google_correo = buscar_usuario_google_por_correo(correo)
+
+        if usuario_google_correo:
+
+            actualizar_ultimo_inicio_sesion_google(
+                usuario_google_correo["firebase_uid"]
+            )
+
+            return jsonify({
+                "resultado": "Sesion iniciada con Google",
+                "usuario_google": usuario_google_correo
+            }), 200
+
+        usuario_normal = buscar_usuario_normal_por_correo(correo)
+
+        if usuario_normal and not confirmar_google:
+
+            return jsonify({
+                "resultado": "correo_existente",
+                "mensaje": "Este correo ya existe en Nonna, ¿querés proceder con Google?"
+            }), 200
+
+        id_usuario_google = crear_usuario_google(
+            firebase_uid,
+            nombre,
+            correo,
+            foto_perfil
+        )
+
+        return jsonify({
+            "resultado": "Usuario Google creado",
+            "id_usuario_google": id_usuario_google
+        }), 201
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+    
 
 @app.route("/traer_usuarios", methods=["GET"])
 def traer_usuarios():
