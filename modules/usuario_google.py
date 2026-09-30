@@ -61,7 +61,7 @@ def buscar_usuario_normal_por_correo(correo):
 
     sql = """
         SELECT *
-        FROM usuario
+        FROM Usuario
         WHERE correo = %s
           AND estado != 'Eliminado'
     """
