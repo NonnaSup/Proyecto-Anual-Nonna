@@ -120,6 +120,100 @@ def crear_usuario_google(firebase_uid, nombre, correo, foto_perfil):
 
     return id_usuario_google
 
+# ==================================================
+# COMPLETAR USUARIO GOOGLE
+# ==================================================
+
+def completar_usuario_google(firebase_uid, nombre_usuario, fecha_nacimiento):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    try:
+
+        # ------------------------------------------
+        # 1. Buscar los datos del usuario Google
+        # ------------------------------------------
+
+        sql_google = """
+            SELECT nombre, correo, foto_perfil
+            FROM usuario_google
+            WHERE firebase_uid = %s
+        """
+
+        cursor.execute(sql_google, (firebase_uid,))
+        usuario_google = cursor.fetchone()
+
+        if not usuario_google:
+            return None
+
+        # ------------------------------------------
+        # 2. Crear usuario normal
+        # ------------------------------------------
+
+        sql_usuario = """
+            INSERT INTO Usuario
+            (
+                nombre,
+                nombre_usuario,
+                correo,
+                fecha_nacimiento,
+                foto_perfil,
+                cuenta_verificada,
+                estado,
+                fecha_registro
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+
+        fecha_actual = datetime.now().date()
+
+        valores = (
+            usuario_google["nombre"],
+            nombre_usuario,
+            usuario_google["correo"],
+            fecha_nacimiento,
+            usuario_google["foto_perfil"],
+            True,
+            "Activo",
+            fecha_actual
+        )
+
+        cursor.execute(sql_usuario, valores)
+
+        id_usuario = cursor.lastrowid
+
+        # ------------------------------------------
+        # 3. Vincular usuario_google con Usuario
+        # ------------------------------------------
+
+        sql_update = """
+            UPDATE usuario_google
+            SET id_usuario = %s
+            WHERE firebase_uid = %s
+        """
+
+        cursor.execute(
+            sql_update,
+            (
+                id_usuario,
+                firebase_uid
+            )
+        )
+
+        conexion.commit()
+
+        return id_usuario
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
 
 # ==================================================
 # ACTUALIZAR ÚLTIMO INICIO DE SESIÓN

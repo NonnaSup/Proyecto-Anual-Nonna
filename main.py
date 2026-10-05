@@ -26,7 +26,9 @@ from modules.usuario_google import (
     buscar_usuario_google_por_correo,
     buscar_usuario_normal_por_correo,
     crear_usuario_google,
-    actualizar_ultimo_inicio_sesion_google
+    actualizar_ultimo_inicio_sesion_google,
+    completar_usuario_google
+
 )
 
 from modules.receta import (
@@ -185,6 +187,69 @@ def iniciar_sesion_google_api():
 
         return jsonify({
             "error": str(e)
+        }), 500
+        
+@app.route('/completar_usuario_google', methods=['POST'])
+def completar_usuario_google_route():
+
+    datos = request.get_json()
+
+    if not datos:
+        return jsonify({
+            "error": "No se recibieron datos"
+        }), 400
+
+    firebase_uid = datos.get("firebase_uid")
+    nombre_usuario = datos.get("nombre_usuario")
+    fecha_nacimiento = datos.get("fecha_nacimiento")
+
+    # ------------------------------------------
+    # Validar datos
+    # ------------------------------------------
+
+    if not firebase_uid:
+        return jsonify({
+            "error": "Falta firebase_uid"
+        }), 400
+
+    if not nombre_usuario:
+        return jsonify({
+            "error": "Falta nombre_usuario"
+        }), 400
+
+    if not fecha_nacimiento:
+        return jsonify({
+            "error": "Falta fecha_nacimiento"
+        }), 400
+
+    try:
+
+        # ------------------------------------------
+        # Completar usuario
+        # ------------------------------------------
+
+        id_usuario = completar_usuario_google(
+            firebase_uid,
+            nombre_usuario,
+            fecha_nacimiento
+        )
+
+        if id_usuario is None:
+            return jsonify({
+                "error": "No existe el usuario de Google"
+            }), 404
+
+        return jsonify({
+            "mensaje": "Usuario completado correctamente",
+            "id_usuario": id_usuario
+        }), 200
+
+    except Exception as e:
+
+        print("ERROR AL COMPLETAR USUARIO GOOGLE:", e)
+
+        return jsonify({
+            "error": "Error al completar usuario"
         }), 500
     
 
