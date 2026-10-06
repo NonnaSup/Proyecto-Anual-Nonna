@@ -117,6 +117,10 @@ def iniciar_sesion_api():
 # INICIO DE SESIÓN CON GOOGLE
 # -----------------------------------------
 
+# -----------------------------------------
+# INICIO DE SESIÓN CON GOOGLE
+# -----------------------------------------
+
 @app.route("/iniciar_sesion_google", methods=["POST", "OPTIONS"])
 def iniciar_sesion_google_api():
 
@@ -138,16 +142,40 @@ def iniciar_sesion_google_api():
 
     try:
 
+        # -----------------------------------------
+        # 1. Buscar por UID de Firebase
+        # -----------------------------------------
+
         usuario_google = buscar_usuario_google_por_uid(firebase_uid)
 
         if usuario_google:
 
             actualizar_ultimo_inicio_sesion_google(firebase_uid)
 
+            # -----------------------------------------
+            # ¿Ya tiene usuario normal asociado?
+            # -----------------------------------------
+
+            if usuario_google["id_usuario"] is None:
+
+                return jsonify({
+                    "resultado": "completar_perfil",
+                    "usuario_google": usuario_google
+                }), 200
+
+            # -----------------------------------------
+            # Ya completó el perfil
+            # -----------------------------------------
+
             return jsonify({
                 "resultado": "Sesion iniciada con Google",
-                "usuario_google": usuario_google
+                "usuario_google": usuario_google,
+                "id_usuario": usuario_google["id_usuario"]
             }), 200
+
+        # -----------------------------------------
+        # 2. Buscar Google por correo
+        # -----------------------------------------
 
         usuario_google_correo = buscar_usuario_google_por_correo(correo)
 
@@ -157,10 +185,22 @@ def iniciar_sesion_google_api():
                 usuario_google_correo["firebase_uid"]
             )
 
+            if usuario_google_correo["id_usuario"] is None:
+
+                return jsonify({
+                    "resultado": "completar_perfil",
+                    "usuario_google": usuario_google_correo
+                }), 200
+
             return jsonify({
                 "resultado": "Sesion iniciada con Google",
-                "usuario_google": usuario_google_correo
+                "usuario_google": usuario_google_correo,
+                "id_usuario": usuario_google_correo["id_usuario"]
             }), 200
+
+        # -----------------------------------------
+        # 3. Buscar usuario normal por correo
+        # -----------------------------------------
 
         usuario_normal = buscar_usuario_normal_por_correo(correo)
 
@@ -171,6 +211,10 @@ def iniciar_sesion_google_api():
                 "mensaje": "Este correo ya existe en Nonna, ¿querés proceder con Google?"
             }), 200
 
+        # -----------------------------------------
+        # 4. Crear nuevo usuario Google
+        # -----------------------------------------
+
         id_usuario_google = crear_usuario_google(
             firebase_uid,
             nombre,
@@ -179,11 +223,13 @@ def iniciar_sesion_google_api():
         )
 
         return jsonify({
-            "resultado": "Usuario Google creado",
+            "resultado": "completar_perfil",
             "id_usuario_google": id_usuario_google
         }), 201
 
     except Exception as e:
+
+        print("ERROR LOGIN GOOGLE:", e)
 
         return jsonify({
             "error": str(e)
