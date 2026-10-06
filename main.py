@@ -27,7 +27,8 @@ from modules.usuario_google import (
     buscar_usuario_normal_por_correo,
     crear_usuario_google,
     actualizar_ultimo_inicio_sesion_google,
-    completar_usuario_google
+    completar_usuario_google,
+    vincular_usuario_google
 
 )
 
@@ -173,6 +174,7 @@ def iniciar_sesion_google_api():
                 "id_usuario": usuario_google["id_usuario"]
             }), 200
 
+
         # -----------------------------------------
         # 2. Buscar Google por correo
         # -----------------------------------------
@@ -198,22 +200,64 @@ def iniciar_sesion_google_api():
                 "id_usuario": usuario_google_correo["id_usuario"]
             }), 200
 
+
         # -----------------------------------------
         # 3. Buscar usuario normal por correo
         # -----------------------------------------
 
         usuario_normal = buscar_usuario_normal_por_correo(correo)
 
+
+        # ==========================================
+        # CORREO YA EXISTE EN UNA CUENTA NORMAL
+        # ==========================================
+
         if usuario_normal and not confirmar_google:
 
             return jsonify({
                 "resultado": "correo_existente",
-                "mensaje": "Este correo ya existe en Nonna, ¿querés proceder con Google?"
+                "mensaje": "Este correo ya existe en Nonna, ¿querés vincular tu cuenta con Google?"
             }), 200
 
-        # -----------------------------------------
-        # 4. Crear nuevo usuario Google
-        # -----------------------------------------
+
+        # ==========================================
+        # CONFIRMÓ VINCULAR GOOGLE
+        # ==========================================
+
+        if usuario_normal and confirmar_google:
+
+            id_usuario = usuario_normal["id_usuario"]
+
+            # Crear registro de Google
+            id_usuario_google = crear_usuario_google(
+                firebase_uid,
+                nombre,
+                correo,
+                foto_perfil
+            )
+
+            # Vincular Google con el usuario normal existente
+            vinculado = vincular_usuario_google(
+                firebase_uid,
+                id_usuario
+            )
+
+            if not vinculado:
+
+                return jsonify({
+                    "error": "No se pudo vincular la cuenta de Google"
+                }), 500
+
+            return jsonify({
+                "resultado": "Sesion iniciada con Google",
+                "id_usuario": id_usuario,
+                "id_usuario_google": id_usuario_google
+            }), 200
+
+
+        # ==========================================
+        # NUEVO USUARIO GOOGLE
+        # ==========================================
 
         id_usuario_google = crear_usuario_google(
             firebase_uid,
@@ -226,6 +270,7 @@ def iniciar_sesion_google_api():
             "resultado": "completar_perfil",
             "id_usuario_google": id_usuario_google
         }), 201
+
 
     except Exception as e:
 

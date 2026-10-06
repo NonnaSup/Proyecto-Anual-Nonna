@@ -120,6 +120,31 @@ def crear_usuario_google(firebase_uid, nombre, correo, foto_perfil):
 
     return id_usuario_google
 
+
+def vincular_usuario_google(firebase_uid, id_usuario):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        sql = """
+            UPDATE usuario_google
+            SET id_usuario = %s
+            WHERE firebase_uid = %s
+        """
+
+        cursor.execute(sql, (id_usuario, firebase_uid))
+        conexion.commit()
+
+        return cursor.rowcount > 0
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
 # ==================================================
 # COMPLETAR USUARIO GOOGLE
 # ==================================================
