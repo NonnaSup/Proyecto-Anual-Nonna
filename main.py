@@ -4,6 +4,7 @@ import os
 import json
 import uuid
 from werkzeug.utils import secure_filename
+from mysql.connector import IntegrityError
 
 app = Flask(__name__)
 
@@ -18,7 +19,9 @@ from modules.usuario import (
     buscar_usuario_por_id,
     actualizar_usuario,
     eliminar_usuario,
-    iniciar_sesion
+    iniciar_sesion,
+    obtener_perfil,
+    actualizar_perfil
 )
 
 from modules.usuario_google import (
@@ -36,7 +39,10 @@ from modules.receta import (
     crear_receta,
     listar_recetas_previa,
     reaccionar_receta,
-    traer_receta
+    traer_receta,
+    listar_mis_recetas,
+    editar_receta,
+    eliminar_receta
 )
 
 from modules.negocio import (
@@ -684,6 +690,85 @@ def reaccionar_receta_api():
     try:
         resultado = reaccionar_receta(id_usuario, id_receta, like)
         return jsonify({"resultado": resultado}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# -----------------------------------------
+# PERFIL
+# -----------------------------------------
+
+@app.route("/perfil/<int:id_usuario>", methods=["GET"])
+def perfil_obtener_api(id_usuario):
+    try:
+        perfil = obtener_perfil(id_usuario)
+        if perfil is None:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+        return jsonify(perfil), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/perfil/<int:id_usuario>", methods=["PUT"])
+def perfil_actualizar_api(id_usuario):
+    datos = request.get_json() or {}
+    nombre = datos.get("nombre")
+    nombre_usuario = datos.get("nombre_usuario")
+    correo = datos.get("correo")
+    fecha_nacimiento = datos.get("fecha_nacimiento")
+    biografia = datos.get("biografia")
+
+    if not nombre or not nombre_usuario or not correo or not fecha_nacimiento:
+        return jsonify({"error": "Faltan datos obligatorios"}), 400
+
+    try:
+        actualizar_perfil(id_usuario, nombre, nombre_usuario, correo, fecha_nacimiento, biografia)
+        return jsonify({"resultado": "Perfil actualizado"}), 200
+    except IntegrityError:
+        return jsonify({"error": "El nombre de usuario o el correo ya están en uso"}), 409
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/mis_recetas/<int:id_usuario>", methods=["GET"])
+def mis_recetas_api(id_usuario):
+    try:
+        return jsonify(listar_mis_recetas(id_usuario)), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/receta/<int:id_receta>", methods=["PUT"])
+def receta_editar_api(id_receta):
+    datos = request.get_json() or {}
+    id_usuario = datos.get("id_usuario")
+    titulo = datos.get("titulo")
+    descripcion = datos.get("descripcion")
+    tiempo_preparacion = datos.get("tiempo_preparacion")
+    porciones = datos.get("porciones")
+
+    if not id_usuario or not titulo:
+        return jsonify({"error": "Faltan datos obligatorios"}), 400
+
+    try:
+        editar_receta(id_receta, id_usuario, titulo, descripcion, tiempo_preparacion, porciones)
+        return jsonify({"resultado": "Receta actualizada"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/receta/<int:id_receta>", methods=["DELETE"])
+def receta_eliminar_api(id_receta):
+    id_usuario = request.args.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({"error": "Falta el id_usuario"}), 400
+
+    try:
+        eliminado = eliminar_receta(id_receta, id_usuario)
+        if eliminado:
+            return jsonify({"resultado": "Receta eliminada"}), 200
+        return jsonify({"resultado": "No se pudo eliminar la receta"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from mysql.connector import IntegrityError
 from src.conexion import obtener_conexion
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -196,3 +197,75 @@ def iniciar_sesion(credencial, clave):
 
     usuario.pop("clave", None)
     return usuario
+
+
+# ---------------------------------------------------------------
+# PERFIL (nuevo)
+# ---------------------------------------------------------------
+
+def obtener_perfil(id_usuario):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    # no se trae la clave a propósito
+    consulta = """
+        SELECT
+            id_usuario,
+            nombre,
+            nombre_usuario,
+            correo,
+            fecha_nacimiento,
+            foto_perfil,
+            biografia
+        FROM Usuario
+        WHERE id_usuario = %s AND estado != 'Eliminado'
+    """
+
+    cursor.execute(consulta, (id_usuario,))
+    perfil = cursor.fetchone()
+
+    cursor.close()
+    conexion.close()
+
+    if perfil is not None and perfil["fecha_nacimiento"] is not None:
+        # la fecha se pasa a texto YYYY-MM-DD para el input type="date"
+        perfil["fecha_nacimiento"] = perfil["fecha_nacimiento"].isoformat()
+
+    return perfil
+
+
+def actualizar_perfil(id_usuario, nombre, nombre_usuario, correo, fecha_nacimiento, biografia):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        consulta = """
+            UPDATE Usuario
+            SET nombre = %s,
+                nombre_usuario = %s,
+                correo = %s,
+                fecha_nacimiento = %s,
+                biografia = %s
+            WHERE id_usuario = %s AND estado != 'Eliminado'
+        """
+
+        cursor.execute(consulta, (
+            nombre,
+            nombre_usuario,
+            correo,
+            fecha_nacimiento,
+            biografia,
+            id_usuario
+        ))
+
+        conexion.commit()
+        return True
+
+    except IntegrityError:
+        # nombre_usuario o correo ya los usa otra cuenta (son UNIQUE)
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()

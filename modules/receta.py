@@ -175,20 +175,22 @@ def crear_receta(
         cursor.close()
         conexion.close()
 
-###///
 
-def eliminar_receta(id_receta):
+def eliminar_receta(id_receta, id_usuario=None):
 
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
-    consulta = """
-        UPDATE Receta
-        SET estado = 'Eliminado'
-        WHERE id_receta = %s
-    """
+    # Receta.estado es tinyint(1): 1 = activa, 0 = eliminada
+    if id_usuario is None:
+        consulta = "UPDATE Receta SET estado = 0 WHERE id_receta = %s"
+        valores = (id_receta,)
+    else:
+        # con id_usuario solo puede borrar sus propias recetas
+        consulta = "UPDATE Receta SET estado = 0 WHERE id_receta = %s AND id_usuario = %s"
+        valores = (id_receta, id_usuario)
 
-    cursor.execute(consulta, (id_receta,))
+    cursor.execute(consulta, valores)
 
     conexion.commit()
 
@@ -199,98 +201,17 @@ def eliminar_receta(id_receta):
 
     return eliminado
 
-"""
-def listar_receta_previa():
-
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
-
-    consulta =
-    SELECT 
-        id_receta,
-        id_usuario, 
-        titulo,
-        descripcion
-    FROM Receta
-
-    cursor.execute(consulta)
-
-    recetas = cursor.fetchall()
-
-    consultaImg =
-    SELECT 
-        id_imagen,
-        ruta
-    FROM Imagen WHERE id_receta =%s AND principal = 1
-
-    cursor.execute(consultaImg)
-
-    imagenes = cursor.fetchall()
-
-    consultaUsu =
-    SELECT 
-        nombre_usuario,
-        foto_perfil
-    FROM Usuario AND id_usuario
-
-    cursor.execute(consultaUsu)
-
-    usuario = cursor.fetchall()  
-
-    cursor.close()
-    conexion.close()
-
-    return id_receta, imagenes, usuario
-"""
-
-def listar_recetas_previa():
-
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
-
-    consulta = """
-    SELECT
-        r.id_receta,
-        r.id_usuario,
-        r.titulo,
-        r.descripcion,
-        u.nombre_usuario,
-        u.foto_perfil,
-        i.id_imagen,
-        i.ruta AS imagen_principal
-
-    FROM Receta AS r
-
-    INNER JOIN Usuario AS u
-        ON r.id_usuario = u.id_usuario
-
-    LEFT JOIN Imagen AS i
-        ON r.id_receta = i.id_receta
-        AND i.principal = 1
-    """
-
-    try:
-
-        cursor.execute(consulta)
-
-        recetas = cursor.fetchall()
-
-        return recetas
-
-    finally:
-
-        cursor.close()
-        conexion.close()
 
 def buscar_receta(id_receta):
 
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
 
+    # antes consultaba la tabla Usuario por error
     consulta = """
         SELECT *
-        FROM Usuario
-        WHERE id_usuario = %s
+        FROM Receta
+        WHERE id_receta = %s AND estado = 1
     """
 
     cursor.execute(consulta, (id_receta,))
@@ -302,26 +223,6 @@ def buscar_receta(id_receta):
 
     return receta
 
-
-def buscar_usuario_por_nombre(nombre):
-
-    conexion = obtener_conexion()
-    cursor = conexion.cursor(dictionary=True)
-
-    sql = """
-        SELECT *
-        FROM Receta
-        WHERE nombre = %s
-    """
-
-    cursor.execute(sql, (nombre,))
-
-    usuario = cursor.fetchone()
-
-    cursor.close()
-    conexion.close()
-
-    return usuario
 
 def listar_recetas_previa(id_usuario=None):
 
@@ -369,6 +270,8 @@ def listar_recetas_previa(id_usuario=None):
     LEFT JOIN Reaccion AS mi
         ON mi.id_receta = r.id_receta
         AND mi.id_usuario = %s
+
+    WHERE r.estado = 1
     """
 
     try:
@@ -383,7 +286,8 @@ def listar_recetas_previa(id_usuario=None):
 
         cursor.close()
         conexion.close()
-        
+
+
 def reaccionar_receta(id_usuario, id_receta, like):
 
     conexion = obtener_conexion()
@@ -445,6 +349,7 @@ def reaccionar_receta(id_usuario, id_receta, like):
 
         cursor.close()
         conexion.close()
+
 
 def traer_receta(id_receta):
 
@@ -524,5 +429,70 @@ def traer_receta(id_receta):
 
     finally:
 
+        cursor.close()
+        conexion.close()
+
+
+# ---------------------------------------------------------------
+# PERFIL: recetas del usuario (nuevo)
+# ---------------------------------------------------------------
+
+def listar_mis_recetas(id_usuario):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    consulta = """
+    SELECT
+        r.id_receta,
+        r.titulo,
+        r.descripcion,
+        r.tiempo_preparacion,
+        r.porciones,
+        i.ruta AS imagen_principal
+    FROM Receta AS r
+    LEFT JOIN Imagen AS i
+        ON r.id_receta = i.id_receta
+        AND i.principal = 1
+    WHERE r.id_usuario = %s AND r.estado = 1
+    ORDER BY r.id_receta DESC
+    """
+
+    try:
+        cursor.execute(consulta, (id_usuario,))
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def editar_receta(id_receta, id_usuario, titulo, descripcion, tiempo_preparacion, porciones):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    consulta = """
+        UPDATE Receta
+        SET titulo = %s,
+            descripcion = %s,
+            tiempo_preparacion = %s,
+            porciones = %s
+        WHERE id_receta = %s AND id_usuario = %s AND estado = 1
+    """
+
+    try:
+        cursor.execute(consulta, (
+            titulo,
+            descripcion,
+            tiempo_preparacion,
+            porciones,
+            id_receta,
+            id_usuario
+        ))
+        conexion.commit()
+        return True
+
+    finally:
         cursor.close()
         conexion.close()
