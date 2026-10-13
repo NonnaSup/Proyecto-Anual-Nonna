@@ -159,21 +159,29 @@ def eliminar_usuario(id_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
-    sql = """
-        UPDATE Usuario
-        SET estado = 'Eliminado'
-        WHERE id_usuario = %s
-    """
+    try:
+        cursor.execute(
+            "UPDATE Usuario SET estado = 'Eliminado' WHERE id_usuario = %s",
+            (id_usuario,)
+        )
+        eliminado = cursor.rowcount > 0
 
-    cursor.execute(sql, (id_usuario,))
-    conexion.commit()
+        # también se ocultan sus recetas (Receta.estado: 1 = activa, 0 = eliminada)
+        cursor.execute(
+            "UPDATE Receta SET estado = 0 WHERE id_usuario = %s",
+            (id_usuario,)
+        )
 
-    eliminado = cursor.rowcount > 0
+        conexion.commit()
+        return eliminado
 
-    cursor.close()
-    conexion.close()
+    except Exception:
+        conexion.rollback()
+        raise
 
-    return eliminado
+    finally:
+        cursor.close()
+        conexion.close()
 
 
 def iniciar_sesion(credencial, clave):
