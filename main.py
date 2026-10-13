@@ -574,8 +574,8 @@ def eliminar_oferta_api(id_oferta):
 # RECETA
 # -----------------------------------------
 
-@app.route("/nueva_receta", methods=["POST"])
-def nueva_receta():
+@app.route("/subir_receta", methods=["POST"])
+def subir_receta():
     id_usuario = request.form.get("id_usuario")
     titulo = request.form.get("titulo")
     descripcion = request.form.get("descripcion")
