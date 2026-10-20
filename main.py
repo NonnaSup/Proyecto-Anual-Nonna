@@ -718,9 +718,11 @@ def receta_amplia():
 
     except Exception as e:
         app.logger.exception("Error al obtener la receta")
+
         return jsonify({
-            "error": "No se pudo obtener la receta"
-    }), 500
+            "error": "No se pudo obtener la receta",
+            "detalle": str(e)
+        }), 500
 
         
 

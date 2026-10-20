@@ -339,10 +339,12 @@ def reaccionar_receta(id_usuario, id_receta, like):
 
 def traer_receta(id_receta):
 
-    conexion = obtener_conexion()
-    cursor = conexion.cursor(dictionary=True)
+    conexion = None
+    cursor = None
 
     try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor(dictionary=True)
 
         # Datos principales de la receta y su autor
         consulta1 = """
@@ -415,6 +417,14 @@ def traer_receta(id_receta):
             "pasos": pasos,
             "imagenes": imagenes
         }
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if conexion is not None:
+            conexion.close()
+
 
 # ---------------------------------------------------------------
 # PERFIL: recetas del usuario
