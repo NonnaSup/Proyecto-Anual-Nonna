@@ -248,7 +248,17 @@ def listar_recetas_previa(id_usuario=None):
             FROM Comentario c
             WHERE c.id_receta = r.id_receta
         ) AS comentarios,
-        mi.`like` AS mi_reaccion
+                mi.`like` AS mi_reaccion,
+        (
+            SELECT GROUP_CONCAT(
+                DISTINCT COALESCE(ing.nombre, ri.TEXTo_libre)
+                SEPARATOR '||'
+            )
+            FROM RecetaIngrediente AS ri
+            LEFT JOIN Ingrediente AS ing
+                ON ing.id_ingrediente = ri.id_ingrediente
+            WHERE ri.id_receta = r.id_receta
+        ) AS ingredientes
     FROM Receta AS r
     INNER JOIN Usuario AS u
         ON r.id_usuario = u.id_usuario

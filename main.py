@@ -668,6 +668,9 @@ def recetas_previa():
         resultado = []
 
         for receta in recetas:
+            ingredientes = receta[12]
+            if isinstance(ingredientes, (bytes, bytearray)):
+                ingredientes =ingredientes.decode("utf-8")
             resultado.append({
                 "id_receta": receta[0],
                 "id_usuario": receta[1],
@@ -680,7 +683,8 @@ def recetas_previa():
                 "likes": receta[8],
                 "dislikes": receta[9],
                 "comentarios": receta[10],
-                "mi_reaccion": receta[11]
+                "mi_reaccion": receta[11],
+                "ingredientes": ingredientes.split("||") if ingredientes else []
             })
 
         return jsonify(resultado), 200
