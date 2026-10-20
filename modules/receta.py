@@ -425,6 +425,7 @@ def traer_receta(id_receta):
         if conexion is not None:
             conexion.close()
 
+#comentario utilizado para actualizar y dejar funcionando el servidor
 
 # ---------------------------------------------------------------
 # PERFIL: recetas del usuario
