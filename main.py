@@ -655,17 +655,19 @@ def subir_receta():
 
 @app.route("/recetas_previa", methods=["GET"])
 def recetas_previa():
-
     try:
-
         id_usuario = request.args.get("id_usuario", type=int)
+
+        app.logger.info(
+            "Solicitando recetas previas. id_usuario=%s",
+            id_usuario
+        )
 
         recetas = listar_recetas_previa(id_usuario)
 
         resultado = []
 
         for receta in recetas:
-
             resultado.append({
                 "id_receta": receta[0],
                 "id_usuario": receta[1],
@@ -684,33 +686,41 @@ def recetas_previa():
         return jsonify(resultado), 200
 
     except Exception as e:
+        app.logger.exception(
+            "Error al obtener las recetas previas"
+        )
 
         return jsonify({
-            "error": str(e)
+            "error": "No se pudieron obtener las recetas previas",
+            "detalle": str(e)
         }), 500
 
 
 @app.route("/receta_amplia", methods=["GET"])
 def receta_amplia():
 
+    id_receta = request.args.get("id_receta", type=int)
+
+    if id_receta is None:
+        return jsonify({
+            "error": "Falta el id_receta"
+        }), 400
+
     try:
-
-        id_receta = request.args.get("id_receta", type=int)
-
-        if id_receta is None:
-            return jsonify({
-                "error": "Falta el id_receta"
-            }), 400
-
         receta = traer_receta(id_receta)
+
+        if receta is None:
+            return jsonify({
+                "error": "Receta no encontrada"
+            }), 404
 
         return jsonify(receta), 200
 
     except Exception as e:
-
+        app.logger.exception("Error al obtener la receta")
         return jsonify({
-            "error": str(e)
-        }), 500
+            "error": "No se pudo obtener la receta"
+    }), 500
 
         
 

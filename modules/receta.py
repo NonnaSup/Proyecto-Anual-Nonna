@@ -338,78 +338,74 @@ def reaccionar_receta(id_usuario, id_receta, like):
 
 
 def traer_receta(id_receta):
+
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
 
-    # Datos principales de la receta
-    consulta1 = """
-    SELECT
-        r.id_receta,
-        r.id_usuario,
-        r.titulo,
-        r.descripcion,
-        r.tiempo_preparacion,
-        r.porciones,
-        u.nombre_usuario,
-        u.foto_perfil
-    FROM Receta AS r
-    INNER JOIN Usuario AS u
-        ON r.id_usuario = u.id_usuario
-    WHERE r.id_receta = %s
-      AND r.estado = 1
-    """
-
-    # Ingredientes de la receta
-    consulta2 = """
-    SELECT
-        ri.id_ingrediente,
-        ri.cantidad,
-        ri.unidad,
-        ri.TEXTo_libre
-    FROM RecetaIngrediente AS ri
-    WHERE ri.id_receta = %s
-    """
-
-    # Pasos de preparación
-    consulta3 = """
-    SELECT
-        p.numero,
-        p.descripcion_paso
-    FROM Paso AS p
-    WHERE p.id_receta = %s
-    ORDER BY p.numero ASC
-    """
-
-    # TODAS las imágenes asociadas a la receta
-    consulta4 = """
-    SELECT
-        i.id_imagen,
-        i.ruta,
-        i.principal,
-        i.orden
-    FROM Imagen AS i
-    WHERE i.id_receta = %s
-    ORDER BY
-        i.principal DESC,
-        i.orden ASC,
-        i.id_imagen ASC
-    """
-
     try:
+
+        # Datos principales de la receta y su autor
+        consulta1 = """
+            SELECT
+                r.id_receta,
+                r.id_usuario,
+                r.titulo,
+                r.descripcion,
+                r.tiempo_preparacion,
+                r.porciones,
+                u.nombre_usuario,
+                u.foto_perfil
+            FROM Receta AS r
+            INNER JOIN Usuario AS u
+                ON r.id_usuario = u.id_usuario
+            WHERE r.id_receta = %s
+        """
+
         cursor.execute(consulta1, (id_receta,))
         datos_receta = cursor.fetchone()
 
         if datos_receta is None:
             return None
 
+        # Ingredientes
+        consulta2 = """
+            SELECT
+                ri.id_ingrediente,
+                ri.cantidad,
+                ri.unidad,
+                ri.TEXTo_libre
+            FROM RecetaIngrediente AS ri
+            WHERE ri.id_receta = %s
+        """
+
         cursor.execute(consulta2, (id_receta,))
         ingredientes = cursor.fetchall()
+
+        # Pasos de preparación
+        consulta3 = """
+            SELECT
+                p.numero,
+                p.descripcion_paso
+            FROM Paso AS p
+            WHERE p.id_receta = %s
+            ORDER BY p.numero
+        """
 
         cursor.execute(consulta3, (id_receta,))
         pasos = cursor.fetchall()
 
-        # Antes se utilizaba fetchone() y se filtraba principal = 1.
-        # Ahora se obtienen todas las imágenes mediante fetchall().
+        # Todas las imágenes, ordenadas
+        consulta4 = """
+            SELECT
+                i.id_imagen,
+                i.ruta,
+                i.principal,
+                i.orden
+            FROM Imagen AS i
+            WHERE i.id_receta = %s
+            ORDER BY i.orden
+        """
+
         cursor.execute(consulta4, (id_receta,))
         imagenes = cursor.fetchall()
 
@@ -419,11 +415,6 @@ def traer_receta(id_receta):
             "pasos": pasos,
             "imagenes": imagenes
         }
-
-    finally:
-        cursor.close()
-        conexion.close()
-
 
 # ---------------------------------------------------------------
 # PERFIL: recetas del usuario
