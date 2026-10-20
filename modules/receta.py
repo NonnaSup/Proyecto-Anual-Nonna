@@ -219,7 +219,7 @@ def buscar_receta(id_receta):
 
 def listar_recetas_previa(id_usuario=None):
     conexion = obtener_conexion()
-    cursor = conexion.cursor(dictionary=True)
+    cursor = conexion.cursor()
 
     consulta = """
     SELECT
