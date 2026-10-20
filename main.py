@@ -413,6 +413,7 @@ def eliminar_usuario_api(id_usuario):
 @app.route("/nuevo_negocio", methods=["POST"])
 def nuevo_negocio():
     datos = request.get_json() or {}
+
     id_usuario = datos.get("id_usuario")
     nombre_comercial = datos.get("nombre_comercial")
     descripcion = datos.get("descripcion")
@@ -424,18 +425,55 @@ def nuevo_negocio():
     redes_sociales = datos.get("redes_sociales")
 
     if not id_usuario or not nombre_comercial or not telefono or not correo:
-        return jsonify({"error": "Faltan datos obligatorios"}), 400
+        return jsonify({
+            "error": "Faltan datos obligatorios"
+        }), 400
 
     try:
         creado = crear_negocio(
-            id_usuario, nombre_comercial, descripcion, logo,
-            portada, telefono, correo, sitio_web, redes_sociales
+            id_usuario,
+            nombre_comercial,
+            descripcion,
+            logo,
+            portada,
+            telefono,
+            correo,
+            sitio_web,
+            redes_sociales
         )
+
         if creado:
-            return jsonify({"resultado": "Agregado nuevo negocio"}), 201
-        return jsonify({"resultado": "No se pudo crear el negocio"}), 400
+            return jsonify({
+                "resultado": "Agregado nuevo negocio"
+            }), 201
+
+        return jsonify({
+            "resultado": "No se pudo crear el negocio"
+        }), 400
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        codigo_error = e.args[0] if e.args else None
+        detalle_error = str(e)
+
+        print(f"Error al registrar negocio: {detalle_error}")
+
+        # Error SIGNAL de MySQL generado por un trigger.
+        if codigo_error == 1644:
+            return jsonify({
+                "resultado": "limite_alcanzado",
+                "mensaje": (
+                    "¡Tu emprendimiento ya tiene su lugar en La Nonna! "
+                    "Cada usuario puede registrar hasta 2 negocios."
+                )
+            }), 409
+
+        return jsonify({
+            "resultado": "error",
+            "mensaje": (
+                "No pudimos registrar tu negocio. "
+                "Por favor, intentá nuevamente."
+            )
+        }), 500
 
 
 @app.route("/nueva_sucursal", methods=["POST"])
