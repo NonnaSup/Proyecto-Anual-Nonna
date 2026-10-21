@@ -684,7 +684,8 @@ def recetas_previa():
                 "dislikes": receta[9],
                 "comentarios": receta[10],
                 "mi_reaccion": receta[11],
-                "ingredientes": ingredientes.split("||") if ingredientes else []
+                "ingredientes": ingredientes.split("||") if ingredientes else [],
+                "tiempo_preparacion": receta[13]
             })
 
         return jsonify(resultado), 200

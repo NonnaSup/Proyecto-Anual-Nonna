@@ -258,7 +258,8 @@ def listar_recetas_previa(id_usuario=None):
             LEFT JOIN Ingrediente AS ing
                 ON ing.id_ingrediente = ri.id_ingrediente
             WHERE ri.id_receta = r.id_receta
-        ) AS ingredientes
+        ) AS ingredientes,
+        r.tiempo_preparacion
     FROM Receta AS r
     INNER JOIN Usuario AS u
         ON r.id_usuario = u.id_usuario
