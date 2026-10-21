@@ -61,6 +61,28 @@ def crear_negocio(
 
     return filas_afectadas > 0
 
+def listar_mis_negocios(id_usuario):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    consulta = """
+    SELECT
+        n.id_negocio,
+        n.nombre_comercial,
+        n.descripcion,
+    FROM Negocio AS n
+    WHERE n.id_usuario = %s
+    ORDER BY n.id_negocio DESC
+    """
+
+    try:
+        cursor.execute(consulta, (id_usuario,))
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexion.close()
+
 def crear_sucursal(id_negocio, nombre, direccion, horarios, casa_central):
 
     conexion = obtener_conexion()

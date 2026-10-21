@@ -48,7 +48,8 @@ from modules.receta import (
 from modules.negocio import (
     crear_negocio,
     crear_sucursal,
-    buscar_casa_central
+    buscar_casa_central,
+    listar_mis_negocios
 )
 
 from modules.empleo import (
@@ -475,6 +476,15 @@ def nuevo_negocio():
             )
         }), 500
 
+@app.route("/traer_negocios_perfil/<int:id_usuario>", methods=["GET"])
+def traer_negocios_perfil(id_usuario):
+    try:
+        negocio = listar_mis_negocios(id_usuario)
+        if negocio is None:
+            return jsonify({"Sin negocios"}), 404
+        return jsonify(negocio), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/nueva_sucursal", methods=["POST"])
 def nueva_sucursal():
