@@ -61,6 +61,7 @@ def crear_negocio(
 
     return filas_afectadas > 0
 
+
 def listar_mis_negocios(id_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)

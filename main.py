@@ -570,6 +570,7 @@ def subir_borrador(id_oferta):
         return jsonify({"error": str(e)}), 500
 
 
+
 @app.route("/mostrar_borradores/<int:id_usuario>", methods=["GET"])
 def mostrar_borradores(id_usuario):
     try:
