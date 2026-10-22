@@ -73,7 +73,6 @@ def listar_mis_negocios(id_usuario):
         n.descripcion,
     FROM Negocio AS n
     WHERE n.id_usuario = %s
-    ORDER BY n.id_negocio DESC
     """
 
     try:
