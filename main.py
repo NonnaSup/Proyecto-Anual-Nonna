@@ -476,15 +476,16 @@ def nuevo_negocio():
             )
         }), 500
 
+
 @app.route("/traer_negocios_perfil/<int:id_usuario>", methods=["GET"])
 def traer_negocios_perfil(id_usuario):
     try:
-        negocio = listar_mis_negocios(id_usuario)
-        if negocio is None:
-            return jsonify({"Sin negocios"}), 404
-        return jsonify(negocio), 200
+        negocios = listar_mis_negocios(id_usuario)
+        return jsonify(negocios), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/nueva_sucursal", methods=["POST"])
 def nueva_sucursal():

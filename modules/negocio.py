@@ -70,7 +70,7 @@ def listar_mis_negocios(id_usuario):
     SELECT
         n.id_negocio,
         n.nombre_comercial,
-        n.descripcion,
+        n.descripcion
     FROM Negocio AS n
     WHERE n.id_usuario = %s
     """
