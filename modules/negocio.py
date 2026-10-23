@@ -1,4 +1,5 @@
 from src.conexion import obtener_conexion
+from mysql.connector import IntegrityError
 
 
 def crear_negocio(
@@ -60,6 +61,79 @@ def crear_negocio(
     conexion.close()
 
     return filas_afectadas > 0
+
+def actualizar_perfil(id_negocio, nombre_comercial, descripcion, logo, portada, telefono, correo, sitio_web, redes_sociales):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        consulta = """
+            UPDATE Negocio
+            SET nombre_comercial = %s,
+                descripcion = %s,
+                logo = %s,
+                portada = %s,
+                telefono = %s,
+                correo = %s,
+                sitio_web = %s,
+                redes_sociales = %s
+            WHERE id_negocio = %s
+        """
+
+        cursor.execute(consulta, (
+            nombre_comercial, 
+            descripcion, 
+            logo, 
+            portada, 
+            telefono, 
+            correo, 
+            sitio_web, 
+            redes_sociales, 
+            id_negocio
+        ))
+
+        conexion.commit()
+        return True
+
+    except IntegrityError:
+        # nombre_usuario o correo ya los usa otra cuenta (son UNIQUE)
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+def obtener_perfil_negocio(id_negocio):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    try:
+        consulta = """
+            SELECT
+                id_negocio,
+                id_usuario,
+                nombre_comercial,
+                verificado,
+                descripcion,
+                logo,
+                portada,
+                telefono,
+                correo,
+                sitio_web,
+                redes_sociales,
+                estado
+            FROM Negocio
+            WHERE id_negocio = %s
+              AND estado = 1
+        """
+
+        cursor.execute(consulta, (id_negocio,))
+        return cursor.fetchone()
+
+    finally:
+        cursor.close()
+        conexion.close()
 
 
 def listar_mis_negocios(id_usuario):

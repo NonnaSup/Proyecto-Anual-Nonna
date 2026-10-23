@@ -49,7 +49,9 @@ from modules.negocio import (
     crear_negocio,
     crear_sucursal,
     buscar_casa_central,
-    listar_mis_negocios
+    listar_mis_negocios,
+    actualizar_perfil,
+    obtener_perfil_negocio
 )
 
 from modules.empleo import (
@@ -482,6 +484,21 @@ def traer_negocios_perfil(id_usuario):
     try:
         negocios = listar_mis_negocios(id_usuario)
         return jsonify(negocios), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/perfil_negocio/<int:id_negocio>", methods=["GET"])
+def perfil_negocio_obtener_api(id_negocio):
+    try:
+        negocio = obtener_perfil_negocio(id_negocio)
+
+        if negocio is None:
+            return jsonify({
+                "error": "Negocio no encontrado"
+            }), 404
+
+        return jsonify(negocio), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
