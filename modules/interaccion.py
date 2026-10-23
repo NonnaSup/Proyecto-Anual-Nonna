@@ -4,6 +4,13 @@ from src.conexion import obtener_conexion
 from datetime import date
 
 
+def _formatear_fecha(fecha):
+    # Devuelve la fecha como dd/mm/aaaa (o vacío si el comentario no tiene fecha)
+    if fecha is None:
+        return ""
+    return fecha.strftime("%d/%m/%Y")
+
+
 def _estado(cursor, id_receta, id_usuario):
     # Likes y dislikes de la receta (solo reacciones a la receta, no a comentarios/productos)
     cursor.execute("""
@@ -121,7 +128,7 @@ def listar_comentarios(id_receta):
                 c.id_usuario,
                 u.nombre_usuario AS nombre_usuario,
                 c.contenido AS texto,
-                DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') AS fecha
+                c.fecha AS fecha
             FROM Comentario AS c
             INNER JOIN Usuario AS u
                 ON u.id_usuario = c.id_usuario
@@ -129,7 +136,10 @@ def listar_comentarios(id_receta):
               AND (c.estado = 1 OR c.estado IS NULL)
             ORDER BY c.id_comentario ASC
         """, (id_receta,))
-        return cursor.fetchall()
+        filas = cursor.fetchall()
+        for fila in filas:
+            fila["fecha"] = _formatear_fecha(fila["fecha"])
+        return filas
     finally:
         cursor.close()
         conexion.close()
@@ -152,13 +162,15 @@ def comentar(id_usuario, id_receta, texto):
                 c.id_usuario,
                 u.nombre_usuario AS nombre_usuario,
                 c.contenido AS texto,
-                DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') AS fecha
+                c.fecha AS fecha
             FROM Comentario AS c
             INNER JOIN Usuario AS u
                 ON u.id_usuario = c.id_usuario
             WHERE c.id_comentario = %s
         """, (nuevo_id,))
-        return cursor.fetchone()
+        fila = cursor.fetchone()
+        fila["fecha"] = _formatear_fecha(fila["fecha"])
+        return fila
 
     except Exception:
         conexion.rollback()
