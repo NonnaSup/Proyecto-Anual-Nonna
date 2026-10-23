@@ -1,143 +1,200 @@
 # modules/interaccion.py
-# Lógica de like/dislike, comentarios y guardados de recetas.
-# ⚠️ Cambiá obtener_conexion() por la forma en que ya te conectás a MySQL en receta.py
-import pymysql
+# Usa la MISMA conexión que receta.py (sin librerías nuevas).
+from src.conexion import obtener_conexion
 from datetime import date
 
 
-def obtener_conexion():
-    # Adaptá estos datos (o importá tu conexión existente)
-    return pymysql.connect(
-        host="localhost", user="root", password="", database="la_nonna",
-        cursorclass=pymysql.cursors.DictCursor
-    )
+def _estado(cursor, id_receta, id_usuario):
+    # Likes y dislikes de la receta (solo reacciones a la receta, no a comentarios/productos)
+    cursor.execute("""
+        SELECT
+            COALESCE(SUM(`like` = 1), 0) AS likes,
+            COALESCE(SUM(`like` = 0), 0) AS dislikes
+        FROM Reaccion
+        WHERE id_receta = %s
+          AND id_comentario IS NULL
+          AND id_producto IS NULL
+    """, (id_receta,))
+    conteo = cursor.fetchone()
 
-
-def _estado(cur, id_receta, id_usuario):
-    # Contadores de likes y dislikes ("like" va entre comillas invertidas porque es palabra reservada)
-    cur.execute("""SELECT
-                     COALESCE(SUM(`like` = 1), 0) AS likes,
-                     COALESCE(SUM(`like` = 0), 0) AS dislikes
-                   FROM Reaccion
-                   WHERE id_receta = %s AND id_comentario IS NULL AND id_producto IS NULL""", (id_receta,))
-    conteo = cur.fetchone()
-
-    cur.execute("SELECT COUNT(*) AS total FROM Comentario WHERE id_receta = %s", (id_receta,))
-    comentarios = cur.fetchone()["total"]
+    cursor.execute("""
+        SELECT COUNT(*) AS total
+        FROM Comentario
+        WHERE id_receta = %s
+          AND (estado = 1 OR estado IS NULL)
+    """, (id_receta,))
+    total_comentarios = cursor.fetchone()["total"]
 
     # Reacción del usuario actual
-    cur.execute("""SELECT `like` FROM Reaccion
-                   WHERE id_usuario = %s AND id_receta = %s
-                   AND id_comentario IS NULL AND id_producto IS NULL""", (id_usuario, id_receta))
-    fila = cur.fetchone()
+    cursor.execute("""
+        SELECT `like`
+        FROM Reaccion
+        WHERE id_usuario = %s
+          AND id_receta = %s
+          AND id_comentario IS NULL
+          AND id_producto IS NULL
+    """, (id_usuario, id_receta))
+    fila = cursor.fetchone()
+
     mi_reaccion = None
     if fila is not None:
-        mi_reaccion = "like" if fila["like"] == 1 else "dislike"
+        if fila["like"] == 1:
+            mi_reaccion = "like"
+        else:
+            mi_reaccion = "dislike"
 
-    cur.execute("SELECT 1 FROM Guardado WHERE id_usuario = %s AND id_receta = %s", (id_usuario, id_receta))
-    guardada = cur.fetchone() is not None
+    cursor.execute(
+        "SELECT 1 FROM Guardado WHERE id_usuario = %s AND id_receta = %s",
+        (id_usuario, id_receta)
+    )
+    guardada = cursor.fetchone() is not None
 
     return {
         "likes": int(conteo["likes"]),
         "dislikes": int(conteo["dislikes"]),
-        "comentarios": comentarios,
+        "comentarios": int(total_comentarios),
         "mi_reaccion": mi_reaccion,
         "guardada": guardada
     }
 
 
 def estado_interaccion(id_receta, id_usuario):
-    con = obtener_conexion()
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
     try:
-        with con.cursor() as cur:
-            return _estado(cur, id_receta, id_usuario)
+        return _estado(cursor, id_receta, id_usuario)
     finally:
-        con.close()
+        cursor.close()
+        conexion.close()
 
 
-def reaccionar(datos):
-    id_usuario = datos["id_usuario"]
-    id_receta = datos["id_receta"]
-    valor = 1 if datos["like"] else 0
-
-    con = obtener_conexion()
+def reaccionar(id_usuario, id_receta, like):
+    valor = 1 if like else 0
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
     try:
-        with con.cursor() as cur:
-            cur.execute("""SELECT id_reaccion, `like` FROM Reaccion
-                           WHERE id_usuario = %s AND id_receta = %s
-                           AND id_comentario IS NULL AND id_producto IS NULL""", (id_usuario, id_receta))
-            existente = cur.fetchone()
+        cursor.execute("""
+            SELECT id_reaccion, `like`
+            FROM Reaccion
+            WHERE id_usuario = %s
+              AND id_receta = %s
+              AND id_comentario IS NULL
+              AND id_producto IS NULL
+        """, (id_usuario, id_receta))
+        existente = cursor.fetchone()
 
-            if existente is None:
-                # No había reacción: se crea
-                cur.execute("""INSERT INTO Reaccion (id_usuario, id_receta, `like`, fecha)
-                               VALUES (%s, %s, %s, %s)""", (id_usuario, id_receta, valor, date.today()))
-            elif existente["like"] == valor:
-                # Tocó el mismo botón otra vez: se quita la reacción
-                cur.execute("DELETE FROM Reaccion WHERE id_reaccion = %s", (existente["id_reaccion"],))
-            else:
-                # Cambió de like a dislike (o al revés)
-                cur.execute("UPDATE Reaccion SET `like` = %s, fecha = %s WHERE id_reaccion = %s",
-                            (valor, date.today(), existente["id_reaccion"]))
-            con.commit()
-            return _estado(cur, id_receta, id_usuario)
+        if existente is None:
+            cursor.execute("""
+                INSERT INTO Reaccion (id_usuario, id_receta, `like`, fecha)
+                VALUES (%s, %s, %s, %s)
+            """, (id_usuario, id_receta, valor, date.today()))
+
+        elif existente["like"] == valor:
+            # Tocó el mismo botón: se quita la reacción
+            cursor.execute("DELETE FROM Reaccion WHERE id_reaccion = %s",
+                           (existente["id_reaccion"],))
+        else:
+            # Cambió de like a dislike (o al revés)
+            cursor.execute("""
+                UPDATE Reaccion SET `like` = %s, fecha = %s
+                WHERE id_reaccion = %s
+            """, (valor, date.today(), existente["id_reaccion"]))
+
+        conexion.commit()
+        return _estado(cursor, id_receta, id_usuario)
+
+    except Exception:
+        conexion.rollback()
+        raise
     finally:
-        con.close()
+        cursor.close()
+        conexion.close()
 
 
 def listar_comentarios(id_receta):
-    con = obtener_conexion()
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
     try:
-        with con.cursor() as cur:
-            # ⚠️ Asumo que la columna del texto se llama "texto" y la de fecha "fecha"
-            cur.execute("""SELECT c.id_comentario, c.id_usuario, u.nombre AS nombre_usuario,
-                                  c.texto, DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') AS fecha
-                           FROM Comentario c
-                           JOIN Usuario u ON u.id_usuario = c.id_usuario
-                           WHERE c.id_receta = %s
-                           ORDER BY c.id_comentario ASC""", (id_receta,))
-            return cur.fetchall()
+        cursor.execute("""
+            SELECT
+                c.id_comentario,
+                c.id_usuario,
+                u.nombre_usuario AS nombre_usuario,
+                c.contenido AS texto,
+                DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') AS fecha
+            FROM Comentario AS c
+            INNER JOIN Usuario AS u
+                ON u.id_usuario = c.id_usuario
+            WHERE c.id_receta = %s
+              AND (c.estado = 1 OR c.estado IS NULL)
+            ORDER BY c.id_comentario ASC
+        """, (id_receta,))
+        return cursor.fetchall()
     finally:
-        con.close()
+        cursor.close()
+        conexion.close()
 
 
-def comentar(datos):
-    con = obtener_conexion()
+def comentar(id_usuario, id_receta, texto):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
     try:
-        with con.cursor() as cur:
-            cur.execute("""INSERT INTO Comentario (id_usuario, id_receta, texto, fecha)
-                           VALUES (%s, %s, %s, %s)""",
-                        (datos["id_usuario"], datos["id_receta"], datos["texto"], date.today()))
-            con.commit()
-            nuevo_id = cur.lastrowid
+        cursor.execute("""
+            INSERT INTO Comentario (id_usuario, id_receta, contenido, fecha, estado)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (id_usuario, id_receta, texto, date.today(), 1))
+        nuevo_id = cursor.lastrowid
+        conexion.commit()
 
-            cur.execute("""SELECT c.id_comentario, c.id_usuario, u.nombre AS nombre_usuario,
-                                  c.texto, DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') AS fecha
-                           FROM Comentario c
-                           JOIN Usuario u ON u.id_usuario = c.id_usuario
-                           WHERE c.id_comentario = %s""", (nuevo_id,))
-            return cur.fetchone()
+        cursor.execute("""
+            SELECT
+                c.id_comentario,
+                c.id_usuario,
+                u.nombre_usuario AS nombre_usuario,
+                c.contenido AS texto,
+                DATE_FORMAT(c.fecha, '%%d/%%m/%%Y') AS fecha
+            FROM Comentario AS c
+            INNER JOIN Usuario AS u
+                ON u.id_usuario = c.id_usuario
+            WHERE c.id_comentario = %s
+        """, (nuevo_id,))
+        return cursor.fetchone()
+
+    except Exception:
+        conexion.rollback()
+        raise
     finally:
-        con.close()
+        cursor.close()
+        conexion.close()
 
 
-def guardar(datos):
-    id_usuario = datos["id_usuario"]
-    id_receta = datos["id_receta"]
-    con = obtener_conexion()
+def guardar(id_usuario, id_receta):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
     try:
-        with con.cursor() as cur:
-            cur.execute("SELECT id_guardado FROM Guardado WHERE id_usuario = %s AND id_receta = %s",
-                        (id_usuario, id_receta))
-            existente = cur.fetchone()
-            if existente is None:
-                cur.execute("INSERT INTO Guardado (id_usuario, id_receta) VALUES (%s, %s)",
-                            (id_usuario, id_receta))
-                guardada = True
-            else:
-                cur.execute("DELETE FROM Guardado WHERE id_guardado = %s", (existente["id_guardado"],))
-                guardada = False
-            con.commit()
-            return {"guardada": guardada}
+        cursor.execute(
+            "SELECT id_guardado FROM Guardado WHERE id_usuario = %s AND id_receta = %s",
+            (id_usuario, id_receta)
+        )
+        existente = cursor.fetchone()
+
+        if existente is None:
+            cursor.execute("""
+                INSERT INTO Guardado (id_usuario, id_receta, fecha)
+                VALUES (%s, %s, %s)
+            """, (id_usuario, id_receta, date.today()))
+            guardada = True
+        else:
+            cursor.execute("DELETE FROM Guardado WHERE id_guardado = %s",
+                           (existente["id_guardado"],))
+            guardada = False
+
+        conexion.commit()
+        return {"guardada": guardada}
+
+    except Exception:
+        conexion.rollback()
+        raise
     finally:
-        con.close()
+        cursor.close()
+        conexion.close()
