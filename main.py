@@ -492,6 +492,13 @@ def traer_negocios_perfil(id_usuario):
 
 @app.route("/perfil_negocio/<int:id_negocio>", methods=["GET"])
 def perfil_negocio_obtener_api(id_negocio):
+    id_usuario = request.args.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({
+            "error": "Falta el identificador del usuario"
+        }), 400
+
     try:
         negocio = obtener_perfil_negocio(id_negocio)
 
@@ -500,10 +507,18 @@ def perfil_negocio_obtener_api(id_negocio):
                 "error": "Negocio no encontrado"
             }), 404
 
+        if int(negocio["id_usuario"]) != id_usuario:
+            return jsonify({
+                "error": "No tenés permiso para acceder a este negocio"
+            }), 403
+
         return jsonify(negocio), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Error al obtener el perfil del negocio")
+        return jsonify({
+            "error": "No se pudo obtener el perfil del negocio"
+        }), 500
 
 
 @app.route("/nueva_sucursal", methods=["POST"])
