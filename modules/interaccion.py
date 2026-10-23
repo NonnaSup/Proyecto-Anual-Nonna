@@ -198,3 +198,22 @@ def guardar(id_usuario, id_receta):
     finally:
         cursor.close()
         conexion.close()
+
+
+def recetas_con_dislike(id_usuario):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT id_receta
+            FROM Reaccion
+            WHERE id_usuario = %s
+              AND `like` = 0
+              AND id_receta IS NOT NULL
+              AND id_comentario IS NULL
+              AND id_producto IS NULL
+        """, (id_usuario,))
+        return [fila["id_receta"] for fila in cursor.fetchall()]
+    finally:
+        cursor.close()
+        conexion.close()

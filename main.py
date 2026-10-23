@@ -5,6 +5,7 @@ import json
 import uuid
 from werkzeug.utils import secure_filename
 from modules import interaccion
+from modules import interaccion as inter
 from mysql.connector import IntegrityError
 
 app = Flask(__name__)
@@ -875,25 +876,60 @@ def receta_eliminar_api(id_receta):
 
 
 
+
+
+
+
 @app.route('/estado_interaccion/<int:id_receta>/<int:id_usuario>', methods=['GET'])
-def estado_interaccion(id_receta, id_usuario):
-    return jsonify(interaccion.estado_interaccion(id_receta, id_usuario))
+def api_inter_estado(id_receta, id_usuario):
+    try:
+        return jsonify(inter.estado_interaccion(id_receta, id_usuario))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/reaccionar', methods=['POST'])
-def reaccionar():
-    return jsonify(interaccion.reaccionar(request.get_json()))
+def api_inter_reaccionar():
+    try:
+        datos = request.get_json()
+        return jsonify(inter.reaccionar(datos["id_usuario"], datos["id_receta"], datos["like"]))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/comentarios/<int:id_receta>', methods=['GET'])
-def comentarios(id_receta):
-    return jsonify(interaccion.listar_comentarios(id_receta))
+def api_inter_comentarios(id_receta):
+    try:
+        return jsonify(inter.listar_comentarios(id_receta))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/comentar', methods=['POST'])
-def comentar():
-    return jsonify(interaccion.comentar(request.get_json()))
+def api_inter_comentar():
+    try:
+        datos = request.get_json()
+        return jsonify(inter.comentar(datos["id_usuario"], datos["id_receta"], datos["texto"]))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/guardar', methods=['POST'])
-def guardar():
-    return jsonify(interaccion.guardar(request.get_json()))
+def api_inter_guardar():
+    try:
+        datos = request.get_json()
+        return jsonify(inter.guardar(datos["id_usuario"], datos["id_receta"]))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/recetas_con_dislike/<int:id_usuario>', methods=['GET'])
+def api_inter_recetas_con_dislike(id_usuario):
+    try:
+        return jsonify(inter.recetas_con_dislike(id_usuario))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == "__main__":
