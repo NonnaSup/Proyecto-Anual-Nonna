@@ -219,6 +219,44 @@ def listar_negocios():
         conexion.close()
 
 
+def listar_productos_activos():
+    # Publicaciones (Producto) activas de negocios activos, con su imagen
+    # principal (tabla Imagen, por id_producto). Los destacados van primero.
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    consulta = """
+    SELECT
+        p.id_producto,
+        p.id_negocio,
+        p.nombre,
+        p.descripcion,
+        p.precio,
+        p.destacado,
+        (
+            SELECT i.ruta
+            FROM Imagen AS i
+            WHERE i.id_producto = p.id_producto
+            ORDER BY i.principal DESC, (i.orden IS NULL), i.orden, i.id_imagen
+            LIMIT 1
+        ) AS imagen
+    FROM Producto AS p
+    INNER JOIN Negocio AS n
+        ON n.id_negocio = p.id_negocio
+    WHERE p.estado = 1
+      AND n.estado = 1
+    ORDER BY p.id_negocio, p.destacado DESC, p.id_producto DESC
+    """
+
+    try:
+        cursor.execute(consulta)
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
 def listar_mis_negocios(id_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)

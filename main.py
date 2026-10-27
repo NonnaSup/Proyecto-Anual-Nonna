@@ -54,6 +54,7 @@ from modules.negocio import (
     buscar_casa_central,
     listar_mis_negocios,
     listar_negocios,
+    listar_productos_activos,
     actualizar_perfil as actualizar_perfil_negocio,
     obtener_perfil_negocio,
     negocio_es_de_usuario,
@@ -490,26 +491,26 @@ def traer_negocios():
     try:
         negocios = listar_negocios()
 
-        # Publicaciones de cada negocio = sus ofertas de empleo activas (maximo 3)
+        # Publicaciones de cada negocio = sus productos activos (maximo 3)
         publicaciones = {}
 
         try:
-            for oferta in listar_ofertas_activas():
-                if not isinstance(oferta, dict):
-                    continue
-
-                lista = publicaciones.setdefault(oferta.get("id_negocio"), [])
+            for producto in listar_productos_activos():
+                lista = publicaciones.setdefault(producto["id_negocio"], [])
 
                 if len(lista) < 3:
+                    precio = producto["precio"]
+
                     lista.append({
-                        "id_oferta": oferta.get("id_oferta"),
-                        "puesto": oferta.get("puesto"),
-                        "descripcion": oferta.get("descripcion"),
-                        "jornada": oferta.get("jornada"),
-                        "vacantes": oferta.get("vacantes")
+                        "id_producto": producto["id_producto"],
+                        "nombre": producto["nombre"],
+                        "descripcion": producto["descripcion"],
+                        "precio": float(precio) if precio is not None else None,
+                        "destacado": bool(producto["destacado"]),
+                        "imagen": producto["imagen"]
                     })
         except Exception:
-            # si fallan las ofertas, igual se muestran los negocios
+            # si fallan las publicaciones, igual se muestran los negocios
             app.logger.exception("Error al traer las publicaciones de los negocios")
 
         for negocio_fila in negocios:
