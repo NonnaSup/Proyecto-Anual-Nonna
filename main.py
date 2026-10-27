@@ -53,8 +53,10 @@ from modules.negocio import (
     crear_sucursal,
     buscar_casa_central,
     listar_mis_negocios,
-    actualizar_perfil,
-    obtener_perfil_negocio
+    actualizar_perfil as actualizar_perfil_negocio,
+    obtener_perfil_negocio,
+    negocio_es_de_usuario,
+    eliminar_negocio
 )
 
 from modules.empleo import (
@@ -520,6 +522,108 @@ def perfil_negocio_obtener_api(id_negocio):
         return jsonify({
             "error": "No se pudo obtener el perfil del negocio"
         }), 500
+
+
+# -----------------------------------------
+# EDITAR Y ELIMINAR NEGOCIO
+# -----------------------------------------
+
+EXTENSIONES_IMAGEN = {"jpg", "jpeg", "png", "webp"}
+
+
+def guardar_imagen_negocio(archivo):
+    # Si no se envio archivo devuelve None (se conserva la imagen anterior).
+    # Si el archivo no es una imagen permitida lanza ValueError.
+    if archivo is None or not archivo.filename:
+        return None
+
+    nombre_seguro = secure_filename(archivo.filename)
+    extension = nombre_seguro.rsplit(".", 1)[-1].lower() if "." in nombre_seguro else ""
+
+    if extension not in EXTENSIONES_IMAGEN:
+        raise ValueError("La imagen debe ser JPG, PNG o WEBP")
+
+    nombre_unico = f"{uuid.uuid4().hex}_{nombre_seguro}"
+    archivo.save(os.path.join(UPLOAD_FOLDER, nombre_unico))
+
+    # mismo formato de ruta que usan las imagenes de las recetas
+    return f"/static/imagenes/{nombre_unico}"
+
+
+@app.route("/negocio/<int:id_negocio>", methods=["PUT"])
+def negocio_editar_api(id_negocio):
+    id_usuario = request.form.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({"error": "Falta el identificador del usuario"}), 400
+
+    nombre_comercial = request.form.get("nombre_comercial", "").strip()
+    telefono = request.form.get("telefono", "").strip()
+    correo = request.form.get("correo", "").strip()
+
+    if not nombre_comercial or not telefono or not correo:
+        return jsonify({
+            "error": "Nombre comercial, teléfono y correo son obligatorios"
+        }), 400
+
+    try:
+        # Solo el dueño puede modificar su negocio
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para modificar este negocio"
+            }), 403
+
+        actual = obtener_perfil_negocio(id_negocio)
+
+        # Si no se subio una imagen nueva, se conserva la anterior
+        logo = guardar_imagen_negocio(request.files.get("logo")) or actual["logo"]
+        portada = guardar_imagen_negocio(request.files.get("portada")) or actual["portada"]
+
+        actualizar_perfil_negocio(
+            id_negocio,
+            nombre_comercial,
+            request.form.get("descripcion", "").strip() or None,
+            logo,
+            portada,
+            telefono,
+            correo,
+            request.form.get("sitio_web", "").strip() or None,
+            request.form.get("redes_sociales", "").strip() or None
+        )
+
+        return jsonify({"resultado": "Negocio actualizado"}), 200
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except IntegrityError:
+        return jsonify({"error": "Ya existe un negocio con esos datos"}), 409
+    except Exception:
+        app.logger.exception("Error al actualizar el negocio")
+        return jsonify({"error": "No se pudo actualizar el negocio"}), 500
+
+
+@app.route("/negocio/<int:id_negocio>", methods=["DELETE"])
+def negocio_eliminar_api(id_negocio):
+    id_usuario = request.args.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({"error": "Falta el identificador del usuario"}), 400
+
+    try:
+        # Solo el dueño puede eliminar su negocio
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para eliminar este negocio"
+            }), 403
+
+        if eliminar_negocio(id_negocio):
+            return jsonify({"resultado": "Negocio eliminado"}), 200
+
+        return jsonify({"error": "No se pudo eliminar el negocio"}), 400
+
+    except Exception:
+        app.logger.exception("Error al eliminar el negocio")
+        return jsonify({"error": "No se pudo eliminar el negocio"}), 500
 
 
 @app.route("/nueva_sucursal", methods=["POST"])

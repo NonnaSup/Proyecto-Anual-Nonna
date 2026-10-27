@@ -96,7 +96,7 @@ def actualizar_perfil(id_negocio, nombre_comercial, descripcion, logo, portada, 
         return True
 
     except IntegrityError:
-        # nombre_usuario o correo ya los usa otra cuenta (son UNIQUE)
+        # algun dato UNIQUE ya lo usa otro negocio
         conexion.rollback()
         raise
 
@@ -136,6 +136,48 @@ def obtener_perfil_negocio(id_negocio):
         conexion.close()
 
 
+def negocio_es_de_usuario(id_negocio, id_usuario):
+    # Verifica que el negocio exista, este activo y pertenezca al usuario
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        cursor.execute(
+            """
+            SELECT id_negocio
+            FROM Negocio
+            WHERE id_negocio = %s
+              AND id_usuario = %s
+              AND estado = 1
+            """,
+            (id_negocio, id_usuario)
+        )
+        return cursor.fetchone() is not None
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def eliminar_negocio(id_negocio):
+    # Baja logica: no se borra la fila, solo se pasa estado a 0.
+    # Asi no rompe las foreign keys (sucursales, empleos, etc.)
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        cursor.execute(
+            "UPDATE Negocio SET estado = 0 WHERE id_negocio = %s",
+            (id_negocio,)
+        )
+        conexion.commit()
+        return cursor.rowcount > 0
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
 def listar_mis_negocios(id_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
@@ -147,6 +189,7 @@ def listar_mis_negocios(id_usuario):
         n.descripcion
     FROM Negocio AS n
     WHERE n.id_usuario = %s
+      AND n.estado = 1
     """
 
     try:
