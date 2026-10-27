@@ -180,7 +180,7 @@ def eliminar_negocio(id_negocio):
 
 def listar_negocios():
     # Todos los negocios activos (para la pagina publica de Negocios).
-    # No se devuelven telefono ni correo en el listado.
+    # La direccion sale de la casa central (si el negocio tiene una).
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
 
@@ -191,8 +191,14 @@ def listar_negocios():
         n.descripcion,
         n.logo,
         n.portada,
-        n.verificado
+        n.verificado,
+        n.telefono,
+        n.correo,
+        s.direccion
     FROM Negocio AS n
+    LEFT JOIN Sucursal AS s
+        ON s.id_negocio = n.id_negocio
+       AND s.casa_central = 1
     WHERE n.estado = 1
     ORDER BY n.nombre_comercial
     """
