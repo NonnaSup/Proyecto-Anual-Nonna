@@ -178,6 +178,34 @@ def eliminar_negocio(id_negocio):
         conexion.close()
 
 
+def listar_negocios():
+    # Todos los negocios activos (para la pagina publica de Negocios).
+    # No se devuelven telefono ni correo en el listado.
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    consulta = """
+    SELECT
+        n.id_negocio,
+        n.nombre_comercial,
+        n.descripcion,
+        n.logo,
+        n.portada,
+        n.verificado
+    FROM Negocio AS n
+    WHERE n.estado = 1
+    ORDER BY n.nombre_comercial
+    """
+
+    try:
+        cursor.execute(consulta)
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
 def listar_mis_negocios(id_usuario):
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
@@ -257,7 +285,5 @@ def buscar_casa_central(id_negocio):
 
     cursor.close()
     conexion.close()
-
-    return oferta is not None
 
     return oferta is not None

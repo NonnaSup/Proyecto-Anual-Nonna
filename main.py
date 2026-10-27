@@ -53,6 +53,7 @@ from modules.negocio import (
     crear_sucursal,
     buscar_casa_central,
     listar_mis_negocios,
+    listar_negocios,
     actualizar_perfil as actualizar_perfil_negocio,
     obtener_perfil_negocio,
     negocio_es_de_usuario,
@@ -482,6 +483,16 @@ def nuevo_negocio():
                 "Por favor, intentá nuevamente."
             )
         }), 500
+
+
+@app.route("/traer_negocios", methods=["GET"])
+def traer_negocios():
+    try:
+        return jsonify(listar_negocios()), 200
+
+    except Exception as e:
+        app.logger.exception("Error al listar los negocios")
+        return jsonify({"error": "No se pudieron obtener los negocios"}), 500
 
 
 @app.route("/traer_negocios_perfil/<int:id_usuario>", methods=["GET"])
