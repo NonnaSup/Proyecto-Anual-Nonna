@@ -488,9 +488,38 @@ def nuevo_negocio():
 @app.route("/traer_negocios", methods=["GET"])
 def traer_negocios():
     try:
-        return jsonify(listar_negocios()), 200
+        negocios = listar_negocios()
 
-    except Exception as e:
+        # Publicaciones de cada negocio = sus ofertas de empleo activas (maximo 3)
+        publicaciones = {}
+
+        try:
+            for oferta in listar_ofertas_activas():
+                if not isinstance(oferta, dict):
+                    continue
+
+                lista = publicaciones.setdefault(oferta.get("id_negocio"), [])
+
+                if len(lista) < 3:
+                    lista.append({
+                        "id_oferta": oferta.get("id_oferta"),
+                        "puesto": oferta.get("puesto"),
+                        "descripcion": oferta.get("descripcion"),
+                        "jornada": oferta.get("jornada"),
+                        "vacantes": oferta.get("vacantes")
+                    })
+        except Exception:
+            # si fallan las ofertas, igual se muestran los negocios
+            app.logger.exception("Error al traer las publicaciones de los negocios")
+
+        for negocio_fila in negocios:
+            negocio_fila["publicaciones"] = publicaciones.get(
+                negocio_fila["id_negocio"], []
+            )
+
+        return jsonify(negocios), 200
+
+    except Exception:
         app.logger.exception("Error al listar los negocios")
         return jsonify({"error": "No se pudieron obtener los negocios"}), 500
 
