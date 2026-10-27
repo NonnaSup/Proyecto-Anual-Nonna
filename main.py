@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import json
@@ -12,8 +12,18 @@ app = Flask(__name__)
 
 # Habilita CORS para responder al cliente Ionic en localhost o producción
 CORS(app, resources={r"/*": {"origins": "*"}})
-UPLOAD_FOLDER = os.path.join(app.root_path, "static", "imagenes")
+# En Railway, apuntar a una carpeta dentro de un volumen persistente.
+UPLOAD_FOLDER = os.path.abspath(os.environ.get(
+    "UPLOAD_FOLDER", os.path.join(app.root_path, "static", "imagenes")
+))
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+@app.get("/static/imagenes/<path:nombre>")
+def servir_imagen(nombre):
+    # send_from_directory impide salir de la carpeta mediante ../.
+    return send_from_directory(UPLOAD_FOLDER, nombre)
+
 
 from modules.usuario import (
     crear_usuario,
