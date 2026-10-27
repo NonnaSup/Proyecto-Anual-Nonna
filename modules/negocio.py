@@ -186,7 +186,8 @@ def listar_mis_negocios(id_usuario):
     SELECT
         n.id_negocio,
         n.nombre_comercial,
-        n.descripcion
+        n.descripcion,
+        n.logo
     FROM Negocio AS n
     WHERE n.id_usuario = %s
       AND n.estado = 1
@@ -256,5 +257,7 @@ def buscar_casa_central(id_negocio):
 
     cursor.close()
     conexion.close()
+
+    return oferta is not None
 
     return oferta is not None
