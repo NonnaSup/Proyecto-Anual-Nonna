@@ -65,6 +65,8 @@ from modules.negocio import (
     listar_mis_negocios,
     listar_negocios,
     listar_productos_activos,
+    crear_producto,
+    listar_productos_negocio,
     actualizar_perfil as actualizar_perfil_negocio,
     obtener_perfil_negocio,
     negocio_es_de_usuario,
@@ -697,6 +699,110 @@ def nueva_sucursal():
         return jsonify({"resultado": "No se pudo crear la sucursal"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+
+
+
+
+
+
+@app.route("/nuevo_producto", methods=["POST"])
+def nuevo_producto():
+    try:
+        id_usuario = request.form.get("id_usuario")
+        id_negocio = request.form.get("id_negocio")
+        nombre = (request.form.get("nombre") or "").strip()
+        descripcion = (request.form.get("descripcion") or "").strip()
+        precio_texto = request.form.get("precio")
+
+        # Validar campos obligatorios
+        if not id_usuario or not id_negocio or not nombre or not precio_texto:
+            return jsonify({
+                "resultado": "error",
+                "mensaje": "Completá los campos obligatorios."
+            }), 400
+
+        try:
+            id_usuario = int(id_usuario)
+            id_negocio = int(id_negocio)
+            precio = float(precio_texto)
+        except (ValueError, TypeError):
+            return jsonify({
+                "resultado": "error",
+                "mensaje": "Los datos ingresados no son válidos."
+            }), 400
+
+        if precio < 0:
+            return jsonify({
+                "resultado": "error",
+                "mensaje": "El precio no puede ser negativo."
+            }), 400
+
+        # Verificar que el negocio pertenezca al usuario
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "resultado": "error",
+                "mensaje": "No tenés permiso para agregar productos a este negocio."
+            }), 403
+
+        # Guardar imagen opcional
+        archivo = request.files.get("imagen")
+        ruta_imagen = guardar_imagen_negocio(archivo) if archivo else None
+
+        # Crear producto
+        resultado = crear_producto(
+            id_negocio=id_negocio,
+            nombre=nombre,
+            descripcion=descripcion or None,
+            precio=precio,
+            imagen=ruta_imagen
+        )
+
+        if not resultado:
+            return jsonify({
+                "resultado": "error",
+                "mensaje": "No se pudo crear el producto."
+            }), 500
+
+        return jsonify({
+            "resultado": "ok",
+            "mensaje": "Producto creado correctamente.",
+            "id_producto": resultado
+        }), 201
+
+    except ValueError as e:
+        return jsonify({
+            "resultado": "error",
+            "mensaje": str(e)
+        }), 400
+
+    except Exception as e:
+        print("Error al crear producto:", e)
+        return jsonify({
+            "resultado": "error",
+            "mensaje": "Ocurrió un error al crear el producto."
+        }), 500
+
+
+
+@app.route("/productos_negocio/<int:id_negocio>", methods=["GET"])
+def productos_negocio(id_negocio):
+    try:
+        productos = listar_productos_negocio(id_negocio)
+
+        return jsonify({
+            "resultado": "ok",
+            "productos": productos
+        }), 200
+
+    except Exception as e:
+        print("Error al listar productos del negocio:", e)
+        return jsonify({
+            "resultado": "error",
+            "mensaje": "No se pudieron cargar los productos."
+        }), 500
+
 
 # -----------------------------------------
 # EMPLEO

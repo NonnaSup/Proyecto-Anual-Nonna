@@ -338,3 +338,111 @@ def buscar_casa_central(id_negocio):
     conexion.close()
 
     return oferta is not None
+
+def crear_producto(id_negocio, nombre, descripcion, precio, imagen=None):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        consulta = """
+            INSERT INTO Producto (
+                id_negocio,
+                nombre,
+                descripcion,
+                precio,
+                estado,
+                destacado
+            )
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+
+        cursor.execute(consulta, (
+            id_negocio,
+            nombre,
+            descripcion,
+            precio,
+            True,
+            False
+        ))
+
+        id_producto = cursor.lastrowid
+
+        if imagen:
+            consulta_imagen = """
+                INSERT INTO Imagen (
+                    id_producto,
+                    ruta,
+                    principal,
+                    orden
+                )
+                VALUES (%s, %s, %s, %s)
+            """
+
+            cursor.execute(consulta_imagen, (
+                id_producto,
+                imagen,
+                True,
+                1
+            ))
+
+        conexion.commit()
+        return id_producto
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def listar_productos_negocio(id_negocio):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    try:
+        consulta = """
+            SELECT
+                p.id_producto,
+                p.id_negocio,
+                p.nombre,
+                p.descripcion,
+                p.precio,
+                p.estado,
+                p.destacado,
+                (
+                    SELECT i.ruta
+                    FROM Imagen AS i
+                    WHERE i.id_producto = p.id_producto
+                    ORDER BY
+                        i.principal DESC,
+                        (i.orden IS NULL),
+                        i.orden,
+                        i.id_imagen
+                    LIMIT 1
+                ) AS imagen
+            FROM Producto AS p
+            INNER JOIN Negocio AS n
+                ON n.id_negocio = p.id_negocio
+            WHERE p.id_negocio = %s
+              AND p.estado = 1
+              AND n.estado = 1
+            ORDER BY p.destacado DESC, p.id_producto DESC
+        """
+
+        cursor.execute(consulta, (id_negocio,))
+        productos = cursor.fetchall()
+
+        for producto in productos:
+            if producto["precio"] is not None:
+                producto["precio"] = float(producto["precio"])
+
+            producto["estado"] = bool(producto["estado"])
+            producto["destacado"] = bool(producto["destacado"])
+
+        return productos
+
+    finally:
+        cursor.close()
+        conexion.close()
