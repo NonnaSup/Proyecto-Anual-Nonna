@@ -8,6 +8,7 @@ from modules import interaccion
 from modules import interaccion as inter
 from modules import moderacion as mod
 from mysql.connector import IntegrityError
+from modules.moderacion import es_admin
 
 app = Flask(__name__)
 
@@ -1197,6 +1198,10 @@ def api_inter_recetas_con_dislike(id_usuario):
 # -----------------------------------------
 # MODERACIÓN (solo administradores)
 # -----------------------------------------
+
+@app.route('/moderacion/es_moderador/<int:id_usuario>', methods=['GET'])
+def moderacion_es_moderador(id_usuario):
+    return jsonify({"es_moderador": es_admin(id_usuario)})
 
 def _rechazar_si_no_admin(id_usuario):
     # Devuelve la respuesta 403 si quien llama no es administrador; None si puede seguir.
