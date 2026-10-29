@@ -12,6 +12,10 @@ ELIMINAR = {
 }
 
 
+# Lo que un usuario puede denunciar desde la app
+TIPOS_DENUNCIABLES = ("Receta", "Comentario", "Cuenta")
+
+
 def _leer(sql, params=()):
     conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
@@ -112,3 +116,21 @@ def eliminar_contenido(denuncia, id_denuncia):
         _escribir(resolver)
     else:
         _escribir((ELIMINAR[tipo], (id_contenido,)), resolver)
+
+
+def crear_denuncia(id_usuario, tipo, id_contenido, motivo, descripcion):
+    # False si ese usuario ya tiene una denuncia pendiente igual (evita repetirlas)
+    repetida = _leer(
+        "SELECT 1 FROM Denuncia WHERE id_usuario = %s AND tipo_contenido = %s "
+        "AND id_contenido = %s AND (estado = 0 OR estado IS NULL)",
+        (id_usuario, tipo, id_contenido)
+    )
+    if repetida:
+        return False
+
+    _escribir((
+        "INSERT INTO Denuncia (id_usuario, tipo_contenido, id_contenido, motivo, descripcion, estado, fecha) "
+        "VALUES (%s, %s, %s, %s, %s, 0, CURDATE())",
+        (id_usuario, tipo, id_contenido, motivo, descripcion or None)
+    ))
+    return True

@@ -6,6 +6,7 @@ import uuid
 from werkzeug.utils import secure_filename
 from modules import interaccion
 from modules import interaccion as inter
+from modules import moderacion as mod
 from mysql.connector import IntegrityError
 
 app = Flask(__name__)
@@ -1191,6 +1192,104 @@ def api_inter_recetas_con_dislike(id_usuario):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+
+# -----------------------------------------
+# MODERACIÓN (solo administradores)
+# -----------------------------------------
+
+def _rechazar_si_no_admin(id_usuario):
+    # Devuelve la respuesta 403 si quien llama no es administrador; None si puede seguir.
+    # shortcut: el id_usuario lo manda el cliente (igual que el resto de la API), no hay token; agregar JWT/sesión antes de producción.
+    if id_usuario is None or not mod.es_admin(id_usuario):
+        return jsonify({"error": "No tenés permiso de administrador"}), 403
+
+
+@app.get("/moderacion/denuncias")
+def moderacion_listar_api():
+    id_usuario = request.args.get("id_usuario", type=int)
+    rechazo = _rechazar_si_no_admin(id_usuario)
+    if rechazo:
+        return rechazo
+
+    try:
+        return jsonify(mod.listar_denuncias()), 200
+    except Exception:
+        app.logger.exception("Error al listar las denuncias")
+        return jsonify({"error": "No se pudieron obtener las denuncias"}), 500
+
+
+@app.put("/moderacion/denuncias/<int:id_denuncia>")
+def moderacion_estado_api(id_denuncia):
+    datos = request.get_json() or {}
+    estado = datos.get("estado")
+
+    rechazo = _rechazar_si_no_admin(datos.get("id_usuario"))
+    if rechazo:
+        return rechazo
+
+    if estado not in mod.ESTADOS:
+        return jsonify({"error": "Estado inválido"}), 400
+
+    try:
+        if mod.buscar_denuncia(id_denuncia) is None:
+            return jsonify({"error": "Denuncia no encontrada"}), 404
+
+        mod.cambiar_estado(id_denuncia, estado)
+        return jsonify({"resultado": "Denuncia actualizada"}), 200
+    except Exception:
+        app.logger.exception("Error al actualizar la denuncia")
+        return jsonify({"error": "No se pudo actualizar la denuncia"}), 500
+
+
+@app.delete("/moderacion/denuncias/<int:id_denuncia>/contenido")
+def moderacion_eliminar_api(id_denuncia):
+    rechazo = _rechazar_si_no_admin(request.args.get("id_usuario", type=int))
+    if rechazo:
+        return rechazo
+
+    try:
+        denuncia = mod.buscar_denuncia(id_denuncia)
+        if denuncia is None:
+            return jsonify({"error": "Denuncia no encontrada"}), 404
+
+        mod.eliminar_contenido(denuncia, id_denuncia)
+        return jsonify({"resultado": "Contenido eliminado"}), 200
+    except Exception:
+        app.logger.exception("Error al eliminar el contenido denunciado")
+        return jsonify({"error": "No se pudo eliminar el contenido"}), 500
+
+
+# -----------------------------------------
+# DENUNCIAR (cualquier usuario)
+# -----------------------------------------
+
+@app.post("/denunciar")
+def denunciar_api():
+    datos = request.get_json() or {}
+    id_usuario = datos.get("id_usuario")
+    tipo = datos.get("tipo_contenido")
+    id_contenido = datos.get("id_contenido")
+    motivo = (datos.get("motivo") or "").strip()
+    descripcion = (datos.get("descripcion") or "").strip()[:500]
+
+    if not isinstance(id_usuario, int) or not isinstance(id_contenido, int) or not motivo:
+        return jsonify({"error": "Faltan datos obligatorios"}), 400
+
+    if tipo not in mod.TIPOS_DENUNCIABLES:
+        return jsonify({"error": "Tipo de contenido inválido"}), 400
+
+    if tipo == "Cuenta" and id_contenido == id_usuario:
+        return jsonify({"error": "No podés reportar tu propia cuenta"}), 400
+
+    try:
+        if not mod.crear_denuncia(id_usuario, tipo, id_contenido, motivo[:100], descripcion):
+            return jsonify({"error": "Ya reportaste este contenido"}), 409
+
+        return jsonify({"resultado": "Denuncia enviada"}), 201
+    except Exception:
+        app.logger.exception("Error al crear la denuncia")
+        return jsonify({"error": "No se pudo enviar el reporte"}), 500
 
 
 if __name__ == "__main__":
