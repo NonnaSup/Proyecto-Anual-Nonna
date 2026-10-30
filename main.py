@@ -10,6 +10,7 @@ from modules import moderacion as mod
 from mysql.connector import IntegrityError
 from modules.moderacion import es_admin
 from modules.reinicio_clave import reinicio_bp
+import math
 
 
 app = Flask(__name__)
@@ -738,11 +739,10 @@ def nuevo_producto():
                 "resultado": "error",
                 "mensaje": "Los datos ingresados no son válidos."
             }), 400
-
-        if precio < 0:
+        if not math.isfinite(precio) or precio < 0:
             return jsonify({
                 "resultado": "error",
-                "mensaje": "El precio no puede ser negativo."
+                "mensaje": "Ingresá un precio válido, igual o mayor que cero."
             }), 400
 
         # Verificar que el negocio pertenezca al usuario
