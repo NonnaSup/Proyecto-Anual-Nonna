@@ -9,8 +9,12 @@ from modules import interaccion as inter
 from modules import moderacion as mod
 from mysql.connector import IntegrityError
 from modules.moderacion import es_admin
+from modules.reinicio_clave import reinicio_bp
+
 
 app = Flask(__name__)
+
+app.register_blueprint(reinicio_bp)
 
 # Habilita CORS para responder al cliente Ionic en localhost o producción
 CORS(app, resources={r"/*": {"origins": "*"}})
