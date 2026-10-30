@@ -1,8 +1,8 @@
-import os
 import time
 
-import mysql.connector
 from flask import Blueprint, request, jsonify
+from werkzeug.security import generate_password_hash
+from src.conexion import obtener_conexion
 
 reinicio_bp = Blueprint('reinicio_clave', __name__)
 
@@ -10,18 +10,6 @@ reinicio_bp = Blueprint('reinicio_clave', __name__)
 MAX_INTENTOS = 5
 VENTANA_SEGUNDOS = 15 * 60
 intentos = {}
-
-
-def conectar():
-    # Si ya tenés tu propia función de conexión, usala en su lugar.
-    # Estas variables las provee Railway automáticamente.
-    return mysql.connector.connect(
-        host=os.environ['MYSQLHOST'],
-        user=os.environ['MYSQLUSER'],
-        password=os.environ['MYSQLPASSWORD'],
-        database=os.environ['MYSQLDATABASE'],
-        port=int(os.environ.get('MYSQLPORT', 3306)),
-    )
 
 
 def demasiados_intentos(correo):
@@ -36,7 +24,7 @@ def restablecer_clave():
     datos = request.get_json(silent=True) or {}
     correo = (datos.get('correo') or '').strip().lower()
     fecha_nacimiento = datos.get('fecha_nacimiento') or ''  # YYYY-MM-DD
-    clave = datos.get('clave') or ''  # ya llega hasheada desde el front
+    clave = datos.get('clave') or ''  # llega hasheada (SHA-256) desde el front
 
     if not correo or not fecha_nacimiento or not clave:
         return jsonify({'error': 'Datos incompletos'}), 400
@@ -44,7 +32,7 @@ def restablecer_clave():
     if demasiados_intentos(correo):
         return jsonify({'error': 'Demasiados intentos. Probá de nuevo en 15 minutos.'}), 429
 
-    conexion = conectar()
+    conexion = obtener_conexion()
     cursor = conexion.cursor(dictionary=True)
 
     try:
@@ -52,7 +40,8 @@ def restablecer_clave():
         intentos.setdefault(correo, []).append(time.time())
 
         cursor.execute(
-            'SELECT id_usuario FROM Usuario WHERE LOWER(correo) = %s AND fecha_nacimiento = %s',
+            "SELECT id_usuario FROM Usuario "
+            "WHERE LOWER(correo) = %s AND fecha_nacimiento = %s AND estado != 'Eliminado'",
             (correo, fecha_nacimiento),
         )
         usuario = cursor.fetchone()
@@ -61,8 +50,12 @@ def restablecer_clave():
         if not usuario:
             return jsonify({'error': 'Los datos no coinciden con ninguna cuenta.'}), 400
 
-        cursor.execute('UPDATE Usuario SET clave = %s WHERE id_usuario = %s',
-                       (clave, usuario['id_usuario']))
+        # Igual que en crear_usuario: se guarda hasheada con werkzeug,
+        # así iniciar_sesion la valida con check_password_hash.
+        cursor.execute(
+            'UPDATE Usuario SET clave = %s WHERE id_usuario = %s',
+            (generate_password_hash(clave), usuario['id_usuario']),
+        )
         conexion.commit()
 
         intentos.pop(correo, None)
