@@ -446,3 +446,93 @@ def listar_productos_negocio(id_negocio):
     finally:
         cursor.close()
         conexion.close()
+
+
+
+def actualizar_producto(id_producto, id_usuario, nombre, descripcion, precio, imagen=None):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        # Verificar que el producto exista, esté activo
+        # y pertenezca a un negocio activo del usuario.
+        cursor.execute("""
+            SELECT p.id_producto
+            FROM Producto AS p
+            INNER JOIN Negocio AS n
+                ON n.id_negocio = p.id_negocio
+            WHERE p.id_producto = %s
+              AND p.estado = 1
+              AND n.id_usuario = %s
+              AND n.estado = 1
+        """, (id_producto, id_usuario))
+
+        if cursor.fetchone() is None:
+            return False
+
+        cursor.execute("""
+            UPDATE Producto
+            SET nombre = %s,
+                descripcion = %s,
+                precio = %s
+            WHERE id_producto = %s
+              AND estado = 1
+        """, (nombre, descripcion, precio, id_producto))
+
+        # Si se envió una imagen nueva, reemplazar la principal.
+        if imagen:
+            cursor.execute("""
+                UPDATE Imagen
+                SET principal = 0
+                WHERE id_producto = %s
+            """, (id_producto,))
+
+            cursor.execute("""
+                INSERT INTO Imagen (
+                    id_producto,
+                    ruta,
+                    principal,
+                    orden
+                )
+                VALUES (%s, %s, %s, %s)
+            """, (id_producto, imagen, True, 1))
+
+        conexion.commit()
+        return True
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def eliminar_producto(id_producto, id_usuario):
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        # Baja lógica: solamente puede eliminarlo el dueño del negocio.
+        cursor.execute("""
+            UPDATE Producto AS p
+            INNER JOIN Negocio AS n
+                ON n.id_negocio = p.id_negocio
+            SET p.estado = 0
+            WHERE p.id_producto = %s
+              AND p.estado = 1
+              AND n.id_usuario = %s
+              AND n.estado = 1
+        """, (id_producto, id_usuario))
+
+        conexion.commit()
+        return cursor.rowcount > 0
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()

@@ -77,7 +77,9 @@ from modules.negocio import (
     actualizar_perfil as actualizar_perfil_negocio,
     obtener_perfil_negocio,
     negocio_es_de_usuario,
-    eliminar_negocio
+    eliminar_negocio,
+    actualizar_producto,
+    eliminar_producto
 )
 
 from modules.empleo import (
@@ -807,6 +809,92 @@ def productos_negocio(id_negocio):
         return jsonify({
             "resultado": "error",
             "mensaje": "No se pudieron cargar los productos."
+        }), 500
+
+
+@app.route("/producto/<int:id_producto>", methods=["PUT"])
+def producto_editar_api(id_producto):
+    try:
+        id_usuario = request.form.get("id_usuario", type=int)
+        nombre = (request.form.get("nombre") or "").strip()
+        descripcion = (request.form.get("descripcion") or "").strip()
+        precio_texto = request.form.get("precio")
+
+        if not id_usuario or not nombre or not precio_texto:
+            return jsonify({
+                "error": "Faltan datos obligatorios"
+            }), 400
+
+        try:
+            precio = float(precio_texto)
+        except (ValueError, TypeError):
+            return jsonify({
+                "error": "El precio ingresado no es válido"
+            }), 400
+
+        if not math.isfinite(precio) or precio < 0:
+            return jsonify({
+                "error": "Ingresá un precio válido, igual o mayor que cero"
+            }), 400
+
+        archivo = request.files.get("imagen")
+        ruta_imagen = guardar_imagen_negocio(archivo) if archivo else None
+
+        actualizado = actualizar_producto(
+            id_producto,
+            id_usuario,
+            nombre,
+            descripcion or None,
+            precio,
+            ruta_imagen
+        )
+
+        if not actualizado:
+            return jsonify({
+                "error": "Producto no encontrado o no tenés permiso para modificarlo"
+            }), 404
+
+        return jsonify({
+            "resultado": "ok",
+            "mensaje": "Producto actualizado correctamente"
+        }), 200
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    except Exception:
+        app.logger.exception("Error al actualizar el producto")
+        return jsonify({
+            "error": "No se pudo actualizar el producto"
+        }), 500
+
+
+@app.route("/producto/<int:id_producto>", methods=["DELETE"])
+def producto_eliminar_api(id_producto):
+    id_usuario = request.args.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({
+            "error": "Falta el identificador del usuario"
+        }), 400
+
+    try:
+        eliminado = eliminar_producto(id_producto, id_usuario)
+
+        if not eliminado:
+            return jsonify({
+                "error": "Producto no encontrado o no tenés permiso para eliminarlo"
+            }), 404
+
+        return jsonify({
+            "resultado": "ok",
+            "mensaje": "Producto eliminado correctamente"
+        }), 200
+
+    except Exception:
+        app.logger.exception("Error al eliminar el producto")
+        return jsonify({
+            "error": "No se pudo eliminar el producto"
         }), 500
 
 
