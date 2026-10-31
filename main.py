@@ -811,6 +811,41 @@ def productos_negocio(id_negocio):
             "mensaje": "No se pudieron cargar los productos."
         }), 500
 
+@app.route("/negocio_publico/<int:id_negocio>", methods=["GET"])
+def negocio_publico(id_negocio):
+    try:
+        # Obtener los datos públicos del negocio.
+        negocio = obtener_perfil_negocio(id_negocio)
+
+        if negocio is None:
+            return jsonify({
+                "error": "Negocio no encontrado"
+            }), 404
+
+        # No enviar el identificador del propietario en la respuesta pública.
+        negocio.pop("id_usuario", None)
+        negocio.pop("estado", None)
+
+        # Obtener todos los productos activos del negocio.
+        productos = listar_productos_negocio(id_negocio)
+
+        # Preparar los datos para JSON.
+        for producto in productos:
+            producto.pop("id_negocio", None)
+            producto.pop("estado", None)
+
+        negocio["productos"] = productos
+
+        return jsonify(negocio), 200
+
+    except Exception:
+        app.logger.exception(
+            "Error al obtener el perfil público del negocio"
+        )
+
+        return jsonify({
+            "error": "No se pudo obtener la información del negocio"
+        }), 500
 
 @app.route("/producto/<int:id_producto>", methods=["PUT"])
 def producto_editar_api(id_producto):
