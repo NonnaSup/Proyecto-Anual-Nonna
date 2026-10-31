@@ -86,6 +86,7 @@ from modules.empleo import (
     crear_oferta,
     crear_oferta_borrador,
     buscar_oferta_por_id,
+    buscar_oferta_publicada_por_id,
     actualizar_borrador,
     buscar_borradores,
     listar_ofertas,
@@ -1022,13 +1023,25 @@ def traer_ofertas():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/traer_ofertas_activas", methods=["GET"])
-def traer_ofertas_activas():
+@app.route("/buscar_oferta/<int:id_oferta>", methods=["GET"])
+def buscar_oferta_api(id_oferta):
+
     try:
-        ofertas = listar_ofertas_activas()
-        return jsonify(ofertas), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        oferta = buscar_oferta_publicada_por_id(id_oferta)
+
+        if oferta is None:
+            return jsonify({
+                "error": "Oferta no encontrada"
+            }), 404
+
+        return jsonify(oferta), 200
+
+    except Exception:
+        app.logger.exception("Error al buscar la oferta laboral")
+
+        return jsonify({
+            "error": "No se pudo obtener la oferta laboral"
+        }), 500
 
 
 @app.route("/eliminar_oferta/<int:id_oferta>", methods=["DELETE"])

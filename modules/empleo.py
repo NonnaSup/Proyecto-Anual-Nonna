@@ -188,24 +188,88 @@ def listar_ofertas():
 def listar_ofertas_activas():
 
     conexion = obtener_conexion()
-
     cursor = conexion.cursor(dictionary=True)
 
     sql = """
-    SELECT *
-    FROM OfertaLaboral
-    WHERE estado = %s
-    ORDER BY id_oferta;
+        SELECT
+            o.id_oferta,
+            o.id_negocio,
+            o.id_sucursal,
+            o.puesto,
+            o.descripcion,
+            o.jornada,
+            o.vacantes,
+            n.nombre_comercial,
+            n.logo,
+            s.nombre AS nombre_sucursal,
+            s.direccion AS direccion_sucursal
+
+        FROM OfertaLaboral AS o
+
+        INNER JOIN Negocio AS n
+            ON n.id_negocio = o.id_negocio
+
+        LEFT JOIN Sucursal AS s
+            ON s.id_sucursal = o.id_sucursal
+
+        WHERE o.estado = 1
+          AND n.estado = 1
+
+        ORDER BY o.id_oferta DESC
     """
 
-    cursor.execute(sql, (True,))
+    try:
+        cursor.execute(sql)
+        ofertas = cursor.fetchall()
+        return ofertas
 
-    ofertas = cursor.fetchall()
+    finally:
+        cursor.close()
+        conexion.close()
 
-    cursor.close()
-    conexion.close()
 
-    return ofertas
+def buscar_oferta_publicada_por_id(id_oferta):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    sql = """
+        SELECT
+            o.id_oferta,
+            o.id_negocio,
+            o.id_sucursal,
+            o.puesto,
+            o.descripcion,
+            o.jornada,
+            o.vacantes,
+            n.nombre_comercial,
+            n.logo,
+            s.nombre AS nombre_sucursal,
+            s.direccion AS direccion_sucursal
+
+        FROM OfertaLaboral AS o
+
+        INNER JOIN Negocio AS n
+            ON n.id_negocio = o.id_negocio
+
+        LEFT JOIN Sucursal AS s
+            ON s.id_sucursal = o.id_sucursal
+
+        WHERE o.id_oferta = %s
+          AND o.estado = 1
+          AND n.estado = 1
+
+        LIMIT 1
+    """
+
+    try:
+        cursor.execute(sql, (id_oferta,))
+        oferta = cursor.fetchone()
+        return oferta
+
+    finally:
+        cursor.close()
+        conexion.close()
 
 def eliminar_oferta(id_oferta):
 
