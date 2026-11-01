@@ -979,23 +979,85 @@ def nuevo_empleo_borrador():
 
 @app.route("/subir_borrador/<int:id_oferta>", methods=["PUT"])
 def subir_borrador(id_oferta):
+
     datos = request.get_json() or {}
-    puesto = datos.get("puesto")
-    descripcion = datos.get("descripcion")
-    jornada = datos.get("jornada")
+
+    id_usuario = datos.get("id_usuario")
+    puesto = (datos.get("puesto") or "").strip()
+    descripcion = (datos.get("descripcion") or "").strip()
+    jornada = (datos.get("jornada") or "").strip()
     vacantes = datos.get("vacantes")
 
+    # Validar usuario
     try:
-        oferta = buscar_oferta_por_id(id_oferta)
-        if oferta is None:
-            return jsonify({"resultado": "Oferta no encontrada"}), 404
+        id_usuario = int(id_usuario)
+    except (ValueError, TypeError):
+        return jsonify({
+            "error": "El identificador del usuario no es válido"
+        }), 400
 
-        actualizado = actualizar_borrador(id_oferta, puesto, descripcion, jornada, vacantes)
+    # Validar campos obligatorios
+    if not puesto or not descripcion or not jornada or vacantes is None:
+        return jsonify({
+            "error": "Completá todos los campos obligatorios"
+        }), 400
+
+    # Validar cantidad de vacantes
+    try:
+        vacantes = int(vacantes)
+    except (ValueError, TypeError):
+        return jsonify({
+            "error": "La cantidad de vacantes no es válida"
+        }), 400
+
+    if vacantes < 1:
+        return jsonify({
+            "error": "Debe existir al menos una vacante"
+        }), 400
+
+    try:
+
+        # Buscar oferta existente
+        oferta = buscar_oferta_por_id(id_oferta)
+
+        if oferta is None:
+            return jsonify({
+                "error": "Oferta laboral no encontrada"
+            }), 404
+
+        # Verificar que el negocio pertenezca al usuario
+        id_negocio = oferta.get("id_negocio")
+
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para modificar esta oferta laboral"
+            }), 403
+
+        # Actualizar la oferta existente
+        actualizado = actualizar_borrador(
+            id_oferta,
+            puesto,
+            descripcion,
+            jornada,
+            vacantes
+        )
+
         if actualizado:
-            return jsonify({"resultado": "Borrador subido"}), 200
-        return jsonify({"resultado": "No se pudo subir el borrador"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            return jsonify({
+                "resultado": "ok",
+                "mensaje": "Oferta laboral actualizada correctamente"
+            }), 200
+
+        return jsonify({
+            "error": "No se pudieron guardar los cambios"
+        }), 400
+
+    except Exception:
+        app.logger.exception("Error al actualizar la oferta laboral")
+
+        return jsonify({
+            "error": "Ocurrió un error al actualizar la oferta laboral"
+        }), 500
 
 
 @app.route("/mostrar_borradores/<int:id_usuario>", methods=["GET"])
