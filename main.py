@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
@@ -19,6 +20,7 @@ app.register_blueprint(reinicio_bp)
 
 # Habilita CORS para responder al cliente Ionic en localhost o producción
 CORS(app, resources={r"/*": {"origins": "*"}})
+
 # En Railway, apuntar a una carpeta dentro de un volumen persistente.
 UPLOAD_FOLDER = os.path.abspath(os.environ.get(
     "UPLOAD_FOLDER", os.path.join(app.root_path, "static", "imagenes")
@@ -52,8 +54,8 @@ from modules.usuario_google import (
     actualizar_ultimo_inicio_sesion_google,
     completar_usuario_google,
     vincular_usuario_google
-
 )
+
 
 from modules.receta import (
     crear_receta,
@@ -64,6 +66,7 @@ from modules.receta import (
     editar_receta,
     eliminar_receta
 )
+
 
 from modules.negocio import (
     crear_negocio,
@@ -82,6 +85,7 @@ from modules.negocio import (
     eliminar_producto
 )
 
+
 from modules.empleo import (
     crear_oferta,
     crear_oferta_borrador,
@@ -94,6 +98,7 @@ from modules.empleo import (
     eliminar_oferta
 )
 
+
 # -----------------------------------------
 # RUTA PRINCIPAL
 # -----------------------------------------
@@ -101,6 +106,7 @@ from modules.empleo import (
 @app.route("/")
 def inicio():
     return "NONNA funcionando correctamente"
+
 
 # -----------------------------------------
 # USUARIO
@@ -151,10 +157,6 @@ def iniciar_sesion_api():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# -----------------------------------------
-# INICIO DE SESIÓN CON GOOGLE
-# -----------------------------------------
 
 # -----------------------------------------
 # INICIO DE SESIÓN CON GOOGLE
@@ -317,7 +319,8 @@ def iniciar_sesion_google_api():
         return jsonify({
             "error": str(e)
         }), 500
-        
+
+
 @app.route('/completar_usuario_google', methods=['POST'])
 def completar_usuario_google_route():
 
@@ -380,7 +383,7 @@ def completar_usuario_google_route():
         return jsonify({
             "error": "Error al completar usuario"
         }), 500
-    
+
 
 @app.route("/traer_usuarios", methods=["GET"])
 def traer_usuarios():
@@ -437,6 +440,7 @@ def eliminar_usuario_api(id_usuario):
         return jsonify({"resultado": "No se pudo eliminar el usuario"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # -----------------------------------------
 # NEGOCIO
@@ -555,6 +559,7 @@ def traer_negocios_perfil(id_usuario):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/perfil_negocio/<int:id_negocio>", methods=["GET"])
 def perfil_negocio_obtener_api(id_negocio):
@@ -711,12 +716,6 @@ def nueva_sucursal():
         return jsonify({"error": str(e)}), 500
 
 
-
-
-
-
-
-
 @app.route("/nuevo_producto", methods=["POST"])
 def nuevo_producto():
     try:
@@ -742,6 +741,7 @@ def nuevo_producto():
                 "resultado": "error",
                 "mensaje": "Los datos ingresados no son válidos."
             }), 400
+
         if not math.isfinite(precio) or precio < 0:
             return jsonify({
                 "resultado": "error",
@@ -794,7 +794,6 @@ def nuevo_producto():
         }), 500
 
 
-
 @app.route("/productos_negocio/<int:id_negocio>", methods=["GET"])
 def productos_negocio(id_negocio):
     try:
@@ -811,6 +810,7 @@ def productos_negocio(id_negocio):
             "resultado": "error",
             "mensaje": "No se pudieron cargar los productos."
         }), 500
+
 
 @app.route("/negocio_publico/<int:id_negocio>", methods=["GET"])
 def negocio_publico(id_negocio):
@@ -847,6 +847,7 @@ def negocio_publico(id_negocio):
         return jsonify({
             "error": "No se pudo obtener la información del negocio"
         }), 500
+
 
 @app.route("/producto/<int:id_producto>", methods=["PUT"])
 def producto_editar_api(id_producto):
@@ -997,7 +998,6 @@ def subir_borrador(id_oferta):
         return jsonify({"error": str(e)}), 500
 
 
-
 @app.route("/mostrar_borradores/<int:id_usuario>", methods=["GET"])
 def mostrar_borradores(id_usuario):
     try:
@@ -1021,6 +1021,20 @@ def traer_ofertas():
         return jsonify(ofertas), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# NUEVA RUTA: obtener todas las ofertas laborales activas
+@app.route("/traer_ofertas_activas", methods=["GET"])
+def traer_ofertas_activas():
+    try:
+        ofertas = listar_ofertas_activas()
+        return jsonify(ofertas), 200
+
+    except Exception:
+        app.logger.exception("Error al listar las ofertas laborales activas")
+        return jsonify({
+            "error": "No se pudieron obtener las ofertas laborales"
+        }), 500
 
 
 @app.route("/buscar_oferta/<int:id_oferta>", methods=["GET"])
@@ -1057,6 +1071,7 @@ def eliminar_oferta_api(id_oferta):
         return jsonify({"resultado": "No se pudo eliminar la oferta"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # -----------------------------------------
 # RECETA
@@ -1120,7 +1135,8 @@ def recetas_previa():
         for receta in recetas:
             ingredientes = receta[12]
             if isinstance(ingredientes, (bytes, bytearray)):
-                ingredientes =ingredientes.decode("utf-8")
+                ingredientes = ingredientes.decode("utf-8")
+
             resultado.append({
                 "id_receta": receta[0],
                 "id_usuario": receta[1],
@@ -1179,7 +1195,6 @@ def receta_amplia():
             "detalle": str(e)
         }), 500
 
-        
 
 @app.route("/reaccionar_receta", methods=["POST"])
 def reaccionar_receta_api():
@@ -1273,14 +1288,9 @@ def receta_eliminar_api(id_receta):
         eliminado = eliminar_receta(id_receta, id_usuario)
         if eliminado:
             return jsonify({"resultado": "Receta eliminada"}), 200
-        return jsonify({"resultado": "No se pudo eliminar la receta"}), 400
+        return jsonify({"error": "No se pudo eliminar la receta"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-
-
-
 
 
 @app.route('/estado_interaccion/<int:id_receta>/<int:id_usuario>', methods=['GET'])
@@ -1334,7 +1344,6 @@ def api_inter_recetas_con_dislike(id_usuario):
         return jsonify({"error": str(e)}), 500
 
 
-
 # -----------------------------------------
 # MODERACIÓN (solo administradores)
 # -----------------------------------------
@@ -1342,6 +1351,7 @@ def api_inter_recetas_con_dislike(id_usuario):
 @app.route('/moderacion/es_moderador/<int:id_usuario>', methods=['GET'])
 def moderacion_es_moderador(id_usuario):
     return jsonify({"es_moderador": es_admin(id_usuario)})
+
 
 def _rechazar_si_no_admin(id_usuario):
     # Devuelve la respuesta 403 si quien llama no es administrador; None si puede seguir.
