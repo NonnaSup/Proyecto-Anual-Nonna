@@ -482,7 +482,7 @@ def nuevo_negocio():
         }), 400
 
     try:
-        creado = crear_negocio(
+        id_negocio = crear_negocio(
             id_usuario,
             nombre_comercial,
             descripcion,
@@ -495,9 +495,10 @@ def nuevo_negocio():
             direccion
         )
 
-        if creado:
+        if id_negocio:
             return jsonify({
-                "resultado": "Agregado nuevo negocio"
+                "resultado": "Agregado nuevo negocio",
+                "id_negocio": id_negocio
             }), 201
 
         return jsonify({

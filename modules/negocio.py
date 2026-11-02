@@ -16,6 +16,8 @@ def crear_negocio(
 ):
     # Crea el negocio y, en la misma transaccion, su casa central
     # (Sucursal) con la direccion indicada. Si algo falla, no se guarda nada.
+    # Devuelve el id del negocio creado.
+
 
     conexion = obtener_conexion()
 
@@ -84,7 +86,7 @@ def crear_negocio(
 
         conexion.commit()
 
-        return bool(id_negocio)
+        return id_negocio
 
     except Exception:
         conexion.rollback()
@@ -568,3 +570,4 @@ def eliminar_producto(id_producto, id_usuario):
     finally:
         cursor.close()
         conexion.close()
+
