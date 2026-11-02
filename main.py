@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
@@ -79,6 +78,7 @@ from modules.negocio import (
     listar_productos_negocio,
     actualizar_perfil as actualizar_perfil_negocio,
     obtener_perfil_negocio,
+    obtener_direccion_negocio,
     negocio_es_de_usuario,
     eliminar_negocio,
     actualizar_producto,
@@ -463,14 +463,31 @@ def nuevo_negocio():
     correo = datos.get("correo")
     sitio_web = datos.get("sitio_web")
     redes_sociales = datos.get("redes_sociales")
+    tipo_direccion = datos.get("tipo_direccion")
+    direccion = (datos.get("direccion") or "").strip()
 
     if not id_usuario or not nombre_comercial or not telefono or not correo:
         return jsonify({
             "error": "Faltan datos obligatorios"
         }), 400
 
+    # Direccion de la sucursal (casa central):
+    #   "vivienda" -> el negocio funciona desde la vivienda del usuario
+    #   "otra"     -> el usuario escribio la direccion
+    if tipo_direccion == "vivienda":
+        direccion = "Desde la vivienda"
+    elif tipo_direccion == "otra":
+        if not direccion:
+            return jsonify({
+                "error": "Ingresá la dirección de la sucursal."
+            }), 400
+    else:
+        return jsonify({
+            "error": "Elegí cómo querés indicar la dirección."
+        }), 400
+
     try:
-        creado = crear_negocio(
+        id_negocio = crear_negocio(
             id_usuario,
             nombre_comercial,
             descripcion,
@@ -479,12 +496,14 @@ def nuevo_negocio():
             telefono,
             correo,
             sitio_web,
-            redes_sociales
+            redes_sociales,
+            direccion
         )
 
-        if creado:
+        if id_negocio:
             return jsonify({
-                "resultado": "Agregado nuevo negocio"
+                "resultado": "Agregado nuevo negocio",
+                "id_negocio": id_negocio
             }), 201
 
         return jsonify({
@@ -830,6 +849,9 @@ def negocio_publico(id_negocio):
         # No enviar el identificador del propietario en la respuesta pública.
         negocio.pop("id_usuario", None)
         negocio.pop("estado", None)
+
+        # Direccion (tabla Sucursal): casa central o primera sucursal.
+        negocio["direccion"] = obtener_direccion_negocio(id_negocio)
 
         # Obtener todos los productos activos del negocio.
         productos = listar_productos_negocio(id_negocio)
