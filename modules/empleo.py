@@ -320,9 +320,9 @@ def usuario_ya_postulado(id_usuario, id_oferta):
         conexion.close()
 
 
-def registrar_postulacion(id_usuario, id_oferta):
+def registrar_postulacion(id_usuario, id_oferta, archivo_cv):
     """
-    Registra una postulación nueva.
+    Registra una postulación nueva junto con la ruta del CV.
     Devuelve True si se registró correctamente.
     Devuelve False si el usuario ya se había postulado.
     """
@@ -337,16 +337,18 @@ def registrar_postulacion(id_usuario, id_oferta):
                 id_usuario,
                 id_oferta,
                 fecha,
-                estado
+                estado,
+                archivo_cv
             )
-            VALUES (%s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s)
         """
 
         valores = (
             id_usuario,
             id_oferta,
             date.today(),
-            1
+            1,
+            archivo_cv
         )
 
         cursor.execute(sql, valores)
@@ -355,10 +357,10 @@ def registrar_postulacion(id_usuario, id_oferta):
         return cursor.rowcount > 0
 
     except Exception as error:
+
         conexion.rollback()
 
-        # El índice UNIQUE evita duplicados incluso
-        # si dos solicitudes llegan al mismo tiempo.
+        # El índice UNIQUE evita postulaciones duplicadas
         if getattr(error, "errno", None) == 1062:
             return False
 
@@ -367,7 +369,7 @@ def registrar_postulacion(id_usuario, id_oferta):
     finally:
         cursor.close()
         conexion.close()
-
+        
 
 
 def listar_postulaciones_por_oferta(id_oferta):

@@ -26,6 +26,13 @@ UPLOAD_FOLDER = os.path.abspath(os.environ.get(
 ))
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Carpeta exclusiva para guardar los CV de las postulaciones
+CV_FOLDER = os.path.join(UPLOAD_FOLDER, "cv")
+os.makedirs(CV_FOLDER, exist_ok=True)
+
+# Extensiones permitidas para los currículums
+EXTENSIONES_CV = {"pdf", "doc", "docx"}
+
 
 @app.get("/static/imagenes/<path:nombre>")
 def servir_imagen(nombre):
@@ -1168,10 +1175,9 @@ def eliminar_oferta_api(id_oferta):
 @app.route("/postularse", methods=["POST"])
 def postularse_api():
 
-    datos = request.get_json() or {}
-
-    id_usuario = datos.get("id_usuario")
-    id_oferta = datos.get("id_oferta")
+    id_usuario = request.form.get("id_usuario")
+    id_oferta = request.form.get("id_oferta")
+    archivo_cv = request.files.get("archivo_cv")
 
     # Validar identificadores
     try:
@@ -1181,6 +1187,29 @@ def postularse_api():
         return jsonify({
             "error": "Los identificadores del usuario y la oferta no son válidos"
         }), 400
+
+    # Validar que se haya adjuntado el CV
+    if archivo_cv is None or not archivo_cv.filename:
+        return jsonify({
+            "error": "Tenés que adjuntar tu CV para postularte"
+        }), 400
+
+    # Validar extensión
+    nombre_seguro = secure_filename(archivo_cv.filename)
+
+    if "." not in nombre_seguro:
+        return jsonify({
+            "error": "El archivo no tiene una extensión válida"
+        }), 400
+
+    extension = nombre_seguro.rsplit(".", 1)[-1].lower()
+
+    if extension not in EXTENSIONES_CV:
+        return jsonify({
+            "error": "El CV debe estar en formato PDF, DOC o DOCX"
+        }), 400
+
+    ruta_cv = None
 
     try:
 
@@ -1207,10 +1236,32 @@ def postularse_api():
                 "mensaje": "Esta oferta laboral ya fue solicitada"
             }), 409
 
-        # Registrar la postulación
-        registrado = registrar_postulacion(id_usuario, id_oferta)
+        # Crear nombre único para el archivo
+        nombre_archivo = (
+            f"{uuid.uuid4().hex}_{nombre_seguro}"
+        )
+
+        ruta_completa = os.path.join(CV_FOLDER, nombre_archivo)
+
+        # Guardar el archivo
+        archivo_cv.save(ruta_completa)
+
+        # Ruta que se guardará en la base de datos
+        ruta_cv = f"/static/imagenes/cv/{nombre_archivo}"
+
+        # Registrar postulación junto con el CV
+        registrado = registrar_postulacion(
+            id_usuario,
+            id_oferta,
+            ruta_cv
+        )
 
         if not registrado:
+
+            # Si no se registró, eliminar el archivo guardado
+            if os.path.exists(ruta_completa):
+                os.remove(ruta_completa)
+
             return jsonify({
                 "resultado": "ya_postulado",
                 "mensaje": "Esta oferta laboral ya fue solicitada"
@@ -1218,11 +1269,21 @@ def postularse_api():
 
         return jsonify({
             "resultado": "ok",
-            "mensaje": "Te postulaste correctamente a la oferta laboral"
+            "mensaje": "Tu postulación y tu CV fueron enviados correctamente",
+            "archivo_cv": ruta_cv
         }), 201
 
     except Exception:
+
         app.logger.exception("Error al registrar la postulación")
+
+        # Evitar dejar archivos sin una postulación asociada
+        if ruta_cv:
+            nombre_archivo = os.path.basename(ruta_cv)
+            ruta_completa = os.path.join(CV_FOLDER, nombre_archivo)
+
+            if os.path.exists(ruta_completa):
+                os.remove(ruta_completa)
 
         return jsonify({
             "error": "No se pudo registrar la postulación"
