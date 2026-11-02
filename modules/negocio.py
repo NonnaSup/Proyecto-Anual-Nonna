@@ -11,56 +11,88 @@ def crear_negocio(
     telefono,
     correo,
     sitio_web,
-    redes_sociales
+    redes_sociales,
+    direccion=None
 ):
+    # Crea el negocio y, en la misma transaccion, su casa central
+    # (Sucursal) con la direccion indicada. Si algo falla, no se guarda nada.
 
     conexion = obtener_conexion()
 
     cursor = conexion.cursor(dictionary=True)
 
-    consulta = """
-    INSERT INTO Negocio
-    (
-        id_usuario,
-        nombre_comercial,
-        verificado, 
-        descripcion,
-        logo,
-        portada,
-        telefono,
-        correo,
-        sitio_web,
-        redes_sociales,
-        estado
-    )
-    VALUES
-    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
+    try:
+        consulta = """
+        INSERT INTO Negocio
+        (
+            id_usuario,
+            nombre_comercial,
+            verificado, 
+            descripcion,
+            logo,
+            portada,
+            telefono,
+            correo,
+            sitio_web,
+            redes_sociales,
+            estado
+        )
+        VALUES
+        (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
 
-    valores = (
-        id_usuario,
-        nombre_comercial,
-        False,
-        descripcion,
-        logo,
-        portada,
-        telefono,
-        correo,
-        sitio_web,
-        redes_sociales,
-        True
-    )
+        valores = (
+            id_usuario,
+            nombre_comercial,
+            False,
+            descripcion,
+            logo,
+            portada,
+            telefono,
+            correo,
+            sitio_web,
+            redes_sociales,
+            True
+        )
 
-    cursor.execute(consulta, valores)
+        cursor.execute(consulta, valores)
 
-    conexion.commit()
+        id_negocio = cursor.lastrowid
 
-    filas_afectadas = cursor.rowcount
+        if direccion:
+            cursor.execute(
+                """
+                INSERT INTO Sucursal
+                (
+                    id_negocio,
+                    nombre,
+                    direccion,
+                    horarios,
+                    casa_central
+                )
+                VALUES
+                (%s, %s, %s, %s, %s)
+                """,
+                (
+                    id_negocio,
+                    nombre_comercial,
+                    direccion,
+                    None,
+                    1
+                )
+            )
 
-    cursor.close()
-    conexion.close()
+        conexion.commit()
 
-    return filas_afectadas > 0
+        return bool(id_negocio)
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
 
 def actualizar_perfil(id_negocio, nombre_comercial, descripcion, logo, portada, telefono, correo, sitio_web, redes_sociales):
     conexion = obtener_conexion()
