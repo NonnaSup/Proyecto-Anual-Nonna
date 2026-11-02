@@ -292,3 +292,145 @@ def eliminar_oferta(id_oferta):
     conexion.close()
 
     return eliminado
+
+
+def usuario_ya_postulado(id_usuario, id_oferta):
+    """
+    Comprueba si un usuario ya se postuló a una oferta laboral.
+    """
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        sql = """
+            SELECT id_postulacion
+            FROM Postulacion
+            WHERE id_usuario = %s
+              AND id_oferta = %s
+            LIMIT 1
+        """
+
+        cursor.execute(sql, (id_usuario, id_oferta))
+
+        return cursor.fetchone() is not None
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def registrar_postulacion(id_usuario, id_oferta):
+    """
+    Registra una postulación nueva.
+    Devuelve True si se registró correctamente.
+    Devuelve False si el usuario ya se había postulado.
+    """
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        sql = """
+            INSERT INTO Postulacion
+            (
+                id_usuario,
+                id_oferta,
+                fecha,
+                estado
+            )
+            VALUES (%s, %s, %s, %s)
+        """
+
+        valores = (
+            id_usuario,
+            id_oferta,
+            date.today(),
+            1
+        )
+
+        cursor.execute(sql, valores)
+        conexion.commit()
+
+        return cursor.rowcount > 0
+
+    except Exception as error:
+        conexion.rollback()
+
+        # El índice UNIQUE evita duplicados incluso
+        # si dos solicitudes llegan al mismo tiempo.
+        if getattr(error, "errno", None) == 1062:
+            return False
+
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+
+def listar_postulaciones_por_oferta(id_oferta):
+    """
+    Devuelve las postulaciones de una oferta laboral
+    junto con los datos del usuario que se postuló.
+    """
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    try:
+        sql = """
+            SELECT
+                p.id_postulacion,
+                p.id_usuario,
+                p.id_oferta,
+                p.fecha,
+                p.estado,
+                u.nombre,
+                u.nombre_usuario,
+                u.foto_perfil
+
+            FROM Postulacion AS p
+
+            INNER JOIN Usuario AS u
+                ON u.id_usuario = p.id_usuario
+
+            WHERE p.id_oferta = %s
+
+            ORDER BY p.fecha DESC, p.id_postulacion DESC
+        """
+
+        cursor.execute(sql, (id_oferta,))
+
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def contar_postulaciones_por_oferta(id_oferta):
+    """
+    Devuelve la cantidad de usuarios postulados a una oferta.
+    """
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        sql = """
+            SELECT COUNT(*)
+            FROM Postulacion
+            WHERE id_oferta = %s
+        """
+
+        cursor.execute(sql, (id_oferta,))
+
+        resultado = cursor.fetchone()
+
+        return resultado[0] if resultado else 0
+
+    finally:
+        cursor.close()
+        conexion.close()

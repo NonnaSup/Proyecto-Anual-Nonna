@@ -95,7 +95,11 @@ from modules.empleo import (
     buscar_borradores,
     listar_ofertas,
     listar_ofertas_activas,
-    eliminar_oferta
+    eliminar_oferta,
+    usuario_ya_postulado,
+    registrar_postulacion,
+    listar_postulaciones_por_oferta,
+    contar_postulaciones_por_oferta
 )
 
 
@@ -1133,6 +1137,197 @@ def eliminar_oferta_api(id_oferta):
         return jsonify({"resultado": "No se pudo eliminar la oferta"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+    
+# -----------------------------------------
+# POSTULACIONES LABORALES
+# -----------------------------------------
+
+@app.route("/postularse", methods=["POST"])
+def postularse_api():
+
+    datos = request.get_json() or {}
+
+    id_usuario = datos.get("id_usuario")
+    id_oferta = datos.get("id_oferta")
+
+    # Validar identificadores
+    try:
+        id_usuario = int(id_usuario)
+        id_oferta = int(id_oferta)
+    except (ValueError, TypeError):
+        return jsonify({
+            "error": "Los identificadores del usuario y la oferta no son válidos"
+        }), 400
+
+    try:
+
+        # Comprobar que exista el usuario
+        usuario = buscar_usuario_por_id(id_usuario)
+
+        if usuario is None:
+            return jsonify({
+                "error": "Usuario no encontrado"
+            }), 404
+
+        # Comprobar que la oferta exista y esté publicada
+        oferta = buscar_oferta_publicada_por_id(id_oferta)
+
+        if oferta is None:
+            return jsonify({
+                "error": "La oferta laboral no existe o ya no está disponible"
+            }), 404
+
+        # Comprobar si ya se postuló
+        if usuario_ya_postulado(id_usuario, id_oferta):
+            return jsonify({
+                "resultado": "ya_postulado",
+                "mensaje": "Esta oferta laboral ya fue solicitada"
+            }), 409
+
+        # Registrar la postulación
+        registrado = registrar_postulacion(id_usuario, id_oferta)
+
+        if not registrado:
+            return jsonify({
+                "resultado": "ya_postulado",
+                "mensaje": "Esta oferta laboral ya fue solicitada"
+            }), 409
+
+        return jsonify({
+            "resultado": "ok",
+            "mensaje": "Te postulaste correctamente a la oferta laboral"
+        }), 201
+
+    except Exception:
+        app.logger.exception("Error al registrar la postulación")
+
+        return jsonify({
+            "error": "No se pudo registrar la postulación"
+        }), 500
+
+
+# Consultar si un usuario ya se postuló a una oferta
+@app.route(
+    "/estado_postulacion/<int:id_oferta>/<int:id_usuario>",
+    methods=["GET"]
+)
+def estado_postulacion_api(id_oferta, id_usuario):
+
+    try:
+
+        ya_postulado = usuario_ya_postulado(id_usuario, id_oferta)
+
+        return jsonify({
+            "ya_postulado": ya_postulado,
+            "mensaje": (
+                "Esta oferta laboral ya fue solicitada"
+                if ya_postulado else None
+            )
+        }), 200
+
+    except Exception:
+        app.logger.exception("Error al consultar el estado de la postulación")
+
+        return jsonify({
+            "error": "No se pudo consultar la postulación"
+        }), 500
+
+
+# Consultar las postulaciones recibidas por una oferta
+# Solamente puede hacerlo el dueño del negocio.
+@app.route(
+    "/postulaciones_oferta/<int:id_oferta>",
+    methods=["GET"]
+)
+def postulaciones_oferta_api(id_oferta):
+
+    id_usuario = request.args.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({
+            "error": "Falta el identificador del usuario"
+        }), 400
+
+    try:
+
+        # Buscar la oferta
+        oferta = buscar_oferta_por_id(id_oferta)
+
+        if oferta is None:
+            return jsonify({
+                "error": "Oferta laboral no encontrada"
+            }), 404
+
+        # Comprobar que el usuario sea dueño del negocio
+        id_negocio = oferta.get("id_negocio")
+
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para consultar estas postulaciones"
+            }), 403
+
+        postulaciones = listar_postulaciones_por_oferta(id_oferta)
+
+        return jsonify({
+            "resultado": "ok",
+            "cantidad": len(postulaciones),
+            "postulaciones": postulaciones
+        }), 200
+
+    except Exception:
+        app.logger.exception("Error al listar las postulaciones")
+
+        return jsonify({
+            "error": "No se pudieron obtener las postulaciones"
+        }), 500
+
+
+# Consultar la cantidad de postulaciones de una oferta
+# Solamente puede hacerlo el dueño del negocio.
+@app.route(
+    "/contar_postulaciones/<int:id_oferta>",
+    methods=["GET"]
+)
+def contar_postulaciones_api(id_oferta):
+
+    id_usuario = request.args.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({
+            "error": "Falta el identificador del usuario"
+        }), 400
+
+    try:
+
+        oferta = buscar_oferta_por_id(id_oferta)
+
+        if oferta is None:
+            return jsonify({
+                "error": "Oferta laboral no encontrada"
+            }), 404
+
+        id_negocio = oferta.get("id_negocio")
+
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para consultar este contador"
+            }), 403
+
+        cantidad = contar_postulaciones_por_oferta(id_oferta)
+
+        return jsonify({
+            "resultado": "ok",
+            "id_oferta": id_oferta,
+            "cantidad": cantidad
+        }), 200
+
+    except Exception:
+        app.logger.exception("Error al contar las postulaciones")
+
+        return jsonify({
+            "error": "No se pudo obtener la cantidad de postulaciones"
+        }), 500
 
 
 # -----------------------------------------
