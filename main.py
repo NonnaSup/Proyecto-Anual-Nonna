@@ -78,6 +78,7 @@ from modules.negocio import (
     listar_productos_negocio,
     actualizar_perfil as actualizar_perfil_negocio,
     obtener_perfil_negocio,
+    obtener_direccion_negocio,
     negocio_es_de_usuario,
     eliminar_negocio,
     actualizar_producto,
@@ -844,6 +845,9 @@ def negocio_publico(id_negocio):
         # No enviar el identificador del propietario en la respuesta pública.
         negocio.pop("id_usuario", None)
         negocio.pop("estado", None)
+
+        # Direccion (tabla Sucursal): casa central o primera sucursal.
+        negocio["direccion"] = obtener_direccion_negocio(id_negocio)
 
         # Obtener todos los productos activos del negocio.
         productos = listar_productos_negocio(id_negocio)
