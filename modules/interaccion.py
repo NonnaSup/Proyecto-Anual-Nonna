@@ -229,3 +229,102 @@ def recetas_con_dislike(id_usuario):
     finally:
         cursor.close()
         conexion.close()
+
+
+# ---------------------------------------------------------------
+# ACTIVIDAD DEL USUARIO (likes dados y recetas guardadas)
+# Solo cuentan recetas activas (Receta.estado = 1).
+# ---------------------------------------------------------------
+
+_IMAGEN_PRINCIPAL_RECETA = """
+    (
+        SELECT i.ruta
+        FROM Imagen AS i
+        WHERE i.id_receta = r.id_receta
+        ORDER BY i.principal DESC, (i.orden IS NULL), i.orden, i.id_imagen
+        LIMIT 1
+    ) AS imagen_principal
+"""
+
+
+def resumen_interacciones(id_usuario):
+    # Cantidad de recetas con like y de recetas guardadas del usuario
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT COUNT(*) AS total
+            FROM Reaccion AS rx
+            INNER JOIN Receta AS r
+                ON r.id_receta = rx.id_receta
+            WHERE rx.id_usuario = %s
+              AND rx.`like` = 1
+              AND rx.id_comentario IS NULL
+              AND rx.id_producto IS NULL
+              AND r.estado = 1
+        """, (id_usuario,))
+        likes = cursor.fetchone()["total"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total
+            FROM Guardado AS g
+            INNER JOIN Receta AS r
+                ON r.id_receta = g.id_receta
+            WHERE g.id_usuario = %s
+              AND r.estado = 1
+        """, (id_usuario,))
+        guardados = cursor.fetchone()["total"]
+
+        return {"likes": int(likes), "guardados": int(guardados)}
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def listar_likes_usuario(id_usuario):
+    # Recetas a las que el usuario les dio like (las mas recientes primero)
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+    try:
+        cursor.execute(f"""
+            SELECT
+                r.id_receta,
+                r.titulo,
+                {_IMAGEN_PRINCIPAL_RECETA}
+            FROM Reaccion AS rx
+            INNER JOIN Receta AS r
+                ON r.id_receta = rx.id_receta
+            WHERE rx.id_usuario = %s
+              AND rx.`like` = 1
+              AND rx.id_comentario IS NULL
+              AND rx.id_producto IS NULL
+              AND r.estado = 1
+            ORDER BY rx.fecha DESC, rx.id_reaccion DESC
+        """, (id_usuario,))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def listar_guardados_usuario(id_usuario):
+    # Recetas que el usuario guardo (las mas recientes primero)
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+    try:
+        cursor.execute(f"""
+            SELECT
+                r.id_receta,
+                r.titulo,
+                {_IMAGEN_PRINCIPAL_RECETA}
+            FROM Guardado AS g
+            INNER JOIN Receta AS r
+                ON r.id_receta = g.id_receta
+            WHERE g.id_usuario = %s
+              AND r.estado = 1
+            ORDER BY g.fecha DESC, g.id_guardado DESC
+        """, (id_usuario,))
+        return cursor.fetchall()
+    finally:
+        cursor.close()
+        conexion.close()

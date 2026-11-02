@@ -1623,6 +1623,30 @@ def api_inter_recetas_con_dislike(id_usuario):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/resumen_interacciones/<int:id_usuario>', methods=['GET'])
+def api_inter_resumen(id_usuario):
+    try:
+        return jsonify(inter.resumen_interacciones(id_usuario))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/mis_likes/<int:id_usuario>', methods=['GET'])
+def api_inter_mis_likes(id_usuario):
+    try:
+        return jsonify(inter.listar_likes_usuario(id_usuario))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/mis_guardados/<int:id_usuario>', methods=['GET'])
+def api_inter_mis_guardados(id_usuario):
+    try:
+        return jsonify(inter.listar_guardados_usuario(id_usuario))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # -----------------------------------------
 # MODERACIÓN (solo administradores)
 # -----------------------------------------
