@@ -224,7 +224,15 @@ def obtener_perfil(id_usuario):
             correo,
             fecha_nacimiento,
             foto_perfil,
-            biografia
+            biografia,
+            (
+                SELECT ug.foto_perfil
+                FROM usuario_google AS ug
+                WHERE ug.id_usuario = Usuario.id_usuario
+                  AND ug.foto_perfil IS NOT NULL
+                  AND ug.foto_perfil <> ''
+                LIMIT 1
+            ) AS foto_google
         FROM Usuario
         WHERE id_usuario = %s AND estado != 'Eliminado'
     """
@@ -271,6 +279,45 @@ def actualizar_perfil(id_usuario, nombre, nombre_usuario, correo, fecha_nacimien
 
     except IntegrityError:
         # nombre_usuario o correo ya los usa otra cuenta (son UNIQUE)
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def actualizar_foto_perfil(id_usuario, ruta):
+    # ruta = None deja el perfil sin foto.
+    # Usuario.foto_perfil es VARCHAR(100): si la ruta no entra se avisa
+    # en vez de guardarla cortada (una URL cortada queda rota).
+    if ruta is not None and len(ruta) > 100:
+        raise ValueError(
+            "La direccion de la foto es demasiado larga para guardarse."
+        )
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        cursor.execute(
+            "SELECT 1 FROM Usuario "
+            "WHERE id_usuario = %s AND estado != 'Eliminado'",
+            (id_usuario,)
+        )
+
+        if cursor.fetchone() is None:
+            return False
+
+        cursor.execute(
+            "UPDATE Usuario SET foto_perfil = %s WHERE id_usuario = %s",
+            (ruta, id_usuario)
+        )
+
+        conexion.commit()
+        return True
+
+    except Exception:
         conexion.rollback()
         raise
 

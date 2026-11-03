@@ -48,7 +48,8 @@ from modules.usuario import (
     eliminar_usuario,
     iniciar_sesion,
     obtener_perfil,
-    actualizar_perfil
+    actualizar_perfil,
+    actualizar_foto_perfil
 )
 
 
@@ -59,7 +60,8 @@ from modules.usuario_google import (
     crear_usuario_google,
     actualizar_ultimo_inicio_sesion_google,
     completar_usuario_google,
-    vincular_usuario_google
+    vincular_usuario_google,
+    obtener_foto_google
 )
 
 
@@ -1586,6 +1588,46 @@ def perfil_actualizar_api(id_usuario):
         return jsonify({"resultado": "Perfil actualizado"}), 200
     except IntegrityError:
         return jsonify({"error": "El nombre de usuario o el correo ya están en uso"}), 409
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/perfil/<int:id_usuario>/foto", methods=["PUT"])
+def perfil_foto_api(id_usuario):
+    # accion: "subir" (archivo en "foto"), "google" o "quitar"
+    accion = request.form.get("accion")
+
+    try:
+        if accion == "subir":
+            ruta = guardar_imagen_negocio(request.files.get("foto"))
+
+            if ruta is None:
+                return jsonify({"error": "Elegí una imagen"}), 400
+
+        elif accion == "google":
+            ruta = obtener_foto_google(id_usuario)
+
+            if not ruta:
+                return jsonify({
+                    "error": "Tu cuenta no tiene una foto de Google"
+                }), 404
+
+        elif accion == "quitar":
+            ruta = None
+
+        else:
+            return jsonify({"error": "Acción no válida"}), 400
+
+        if not actualizar_foto_perfil(id_usuario, ruta):
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        return jsonify({
+            "resultado": "Foto actualizada",
+            "foto_perfil": ruta
+        }), 200
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

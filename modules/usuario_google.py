@@ -270,3 +270,33 @@ def actualizar_ultimo_inicio_sesion_google(firebase_uid):
     conexion.close()
 
     return actualizado
+
+
+# ==================================================
+# FOTO DE GOOGLE DE UN USUARIO VINCULADO
+# ==================================================
+
+def obtener_foto_google(id_usuario):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    try:
+        cursor.execute(
+            """
+            SELECT foto_perfil
+            FROM usuario_google
+            WHERE id_usuario = %s
+              AND foto_perfil IS NOT NULL
+              AND foto_perfil <> ''
+            LIMIT 1
+            """,
+            (id_usuario,)
+        )
+
+        fila = cursor.fetchone()
+        return fila["foto_perfil"] if fila else None
+
+    finally:
+        cursor.close()
+        conexion.close()
