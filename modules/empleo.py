@@ -275,32 +275,6 @@ def buscar_oferta_publicada_por_id(id_oferta):
         cursor.close()
         conexion.close()
 
-def eliminar_oferta(id_oferta):
-
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
-
-    try:
-        sql = """
-            UPDATE OfertaLaboral
-            SET estado = 2
-            WHERE id_oferta = %s
-              AND estado IN (1, 2)
-        """
-
-        cursor.execute(sql, (id_oferta,))
-        conexion.commit()
-
-        return cursor.rowcount > 0
-
-    except Exception:
-        conexion.rollback()
-        raise
-
-    finally:
-        cursor.close()
-        conexion.close()
-
 def cambiar_estado_oferta(id_oferta, estado):
 
     if estado not in (1, 2):

@@ -104,7 +104,6 @@ from modules.empleo import (
     buscar_borradores,
     listar_ofertas,
     listar_ofertas_activas,
-    eliminar_oferta,
     usuario_ya_postulado,
     registrar_postulacion,
     listar_postulaciones_por_oferta,
@@ -1322,55 +1321,6 @@ def mis_ofertas_api(id_usuario):
         return jsonify({
             "error": "No se pudieron obtener tus ofertas"
         }), 500
-
-
-# -----------------------------------------
-# ELIMINAR OFERTA
-# -----------------------------------------
-
-@app.route("/eliminar_oferta/<int:id_oferta>", methods=["DELETE"])
-def eliminar_oferta_api(id_oferta):
-
-    datos = request.get_json(silent=True) or {}
-
-    try:
-        id_usuario = int(datos.get("id_usuario"))
-    except (ValueError, TypeError):
-        return jsonify({
-            "error": "Falta un identificador de usuario válido"
-        }), 400
-
-    try:
-        oferta = buscar_oferta_por_id(id_oferta)
-
-        if oferta is None:
-            return jsonify({
-                "error": "Oferta laboral no encontrada"
-            }), 404
-
-        if not negocio_es_de_usuario(oferta["id_negocio"], id_usuario):
-            return jsonify({
-                "error": "No tenés permiso para eliminar esta oferta"
-            }), 403
-
-        eliminado = eliminar_oferta(id_oferta)
-
-        if eliminado:
-            return jsonify({
-                "resultado": "ok",
-                "mensaje": "Oferta eliminada correctamente"
-            }), 200
-
-        return jsonify({
-            "error": "No se pudo eliminar la oferta"
-        }), 400
-
-    except Exception:
-        app.logger.exception("Error al eliminar la oferta")
-        return jsonify({
-            "error": "No se pudo eliminar la oferta"
-        }), 500
-
 
 # -----------------------------------------
 # POSTULACIONES LABORALES
