@@ -108,9 +108,11 @@ from modules.empleo import (
     usuario_ya_postulado,
     registrar_postulacion,
     listar_postulaciones_por_oferta,
-    contar_postulaciones_por_oferta
+    contar_postulaciones_por_oferta,
+    cambiar_estado_oferta,
+    listar_ofertas_por_negocio,
+    listar_ofertas_por_usuario
 )
-
 
 # -----------------------------------------
 # RUTA PRINCIPAL
@@ -970,6 +972,7 @@ def producto_eliminar_api(id_producto):
         }), 500
 
 
+
 # -----------------------------------------
 # EMPLEO
 # -----------------------------------------
@@ -977,39 +980,85 @@ def producto_eliminar_api(id_producto):
 @app.route("/nuevo_empleo", methods=["POST"])
 def nuevo_empleo():
     datos = request.get_json() or {}
+
     id_negocio = datos.get("id_negocio")
     id_sucursal = datos.get("id_sucursal")
     puesto = datos.get("puesto")
     descripcion = datos.get("descripcion")
     jornada = datos.get("jornada")
     vacantes = datos.get("vacantes")
+    id_usuario = datos.get("id_usuario")
 
     try:
-        creado = crear_oferta(id_negocio, id_sucursal, puesto, descripcion, jornada, vacantes)
+        id_usuario = int(id_usuario)
+        id_negocio = int(id_negocio)
+
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para publicar en este negocio"
+            }), 403
+
+        creado = crear_oferta(
+            id_negocio,
+            id_sucursal,
+            puesto,
+            descripcion,
+            jornada,
+            vacantes
+        )
+
         if creado:
             return jsonify({"resultado": "Oferta subida"}), 201
+
         return jsonify({"resultado": "No se pudo crear la oferta"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
+    except (ValueError, TypeError):
+        return jsonify({"error": "Los identificadores no son válidos"}), 400
+    except Exception:
+        app.logger.exception("Error al crear la oferta")
+        return jsonify({"error": "No se pudo crear la oferta"}), 500
 
 
 @app.route("/nuevo_empleo_borrador", methods=["POST"])
 def nuevo_empleo_borrador():
     datos = request.get_json() or {}
+
     id_negocio = datos.get("id_negocio")
     id_sucursal = datos.get("id_sucursal")
     puesto = datos.get("puesto")
     descripcion = datos.get("descripcion")
     jornada = datos.get("jornada")
     vacantes = datos.get("vacantes")
+    id_usuario = datos.get("id_usuario")
 
     try:
-        creado = crear_oferta_borrador(id_negocio, id_sucursal, puesto, descripcion, jornada, vacantes)
+        id_usuario = int(id_usuario)
+        id_negocio = int(id_negocio)
+
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para crear borradores en este negocio"
+            }), 403
+
+        creado = crear_oferta_borrador(
+            id_negocio,
+            id_sucursal,
+            puesto,
+            descripcion,
+            jornada,
+            vacantes
+        )
+
         if creado:
             return jsonify({"resultado": "Guardada en borrador"}), 201
+
         return jsonify({"resultado": "No se pudo crear la oferta"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+
+    except (ValueError, TypeError):
+        return jsonify({"error": "Los identificadores no son válidos"}), 400
+    except Exception:
+        app.logger.exception("Error al crear el borrador")
+        return jsonify({"error": "No se pudo crear el borrador"}), 500
 
 
 @app.route("/subir_borrador/<int:id_oferta>", methods=["PUT"])
@@ -1023,7 +1072,6 @@ def subir_borrador(id_oferta):
     jornada = (datos.get("jornada") or "").strip()
     vacantes = datos.get("vacantes")
 
-    # Validar usuario
     try:
         id_usuario = int(id_usuario)
     except (ValueError, TypeError):
@@ -1031,13 +1079,11 @@ def subir_borrador(id_oferta):
             "error": "El identificador del usuario no es válido"
         }), 400
 
-    # Validar campos obligatorios
     if not puesto or not descripcion or not jornada or vacantes is None:
         return jsonify({
             "error": "Completá todos los campos obligatorios"
         }), 400
 
-    # Validar cantidad de vacantes
     try:
         vacantes = int(vacantes)
     except (ValueError, TypeError):
@@ -1051,8 +1097,6 @@ def subir_borrador(id_oferta):
         }), 400
 
     try:
-
-        # Buscar oferta existente
         oferta = buscar_oferta_por_id(id_oferta)
 
         if oferta is None:
@@ -1060,15 +1104,11 @@ def subir_borrador(id_oferta):
                 "error": "Oferta laboral no encontrada"
             }), 404
 
-        # Verificar que el negocio pertenezca al usuario
-        id_negocio = oferta.get("id_negocio")
-
-        if not negocio_es_de_usuario(id_negocio, id_usuario):
+        if not negocio_es_de_usuario(oferta["id_negocio"], id_usuario):
             return jsonify({
                 "error": "No tenés permiso para modificar esta oferta laboral"
             }), 403
 
-        # Actualizar la oferta existente
         actualizado = actualizar_borrador(
             id_oferta,
             puesto,
@@ -1089,7 +1129,6 @@ def subir_borrador(id_oferta):
 
     except Exception:
         app.logger.exception("Error al actualizar la oferta laboral")
-
         return jsonify({
             "error": "Ocurrió un error al actualizar la oferta laboral"
         }), 500
@@ -1099,40 +1138,141 @@ def subir_borrador(id_oferta):
 def mostrar_borradores(id_usuario):
     try:
         usuario = buscar_usuario_por_id(id_usuario)
+
         if usuario is None:
             return jsonify({"resultado": "Usuario no encontrado"}), 404
 
-        borrador = buscar_borradores(id_usuario)
-        if borrador is None:
-            return jsonify({"resultado": "Sin borradores"}), 404
+        borradores = buscar_borradores(id_usuario)
 
-        return jsonify(borrador), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(borradores or []), 200
+
+    except Exception:
+        app.logger.exception("Error al mostrar los borradores")
+        return jsonify({"error": "No se pudieron obtener los borradores"}), 500
 
 
 @app.route("/traer_ofertas", methods=["GET"])
 def traer_ofertas():
     try:
-        ofertas = listar_ofertas()
-        return jsonify(ofertas), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(listar_ofertas()), 200
+    except Exception:
+        app.logger.exception("Error al listar las ofertas")
+        return jsonify({"error": "No se pudieron obtener las ofertas"}), 500
 
 
-# NUEVA RUTA: obtener todas las ofertas laborales activas
 @app.route("/traer_ofertas_activas", methods=["GET"])
 def traer_ofertas_activas():
     try:
-        ofertas = listar_ofertas_activas()
-        return jsonify(ofertas), 200
-
+        return jsonify(listar_ofertas_activas()), 200
     except Exception:
-        app.logger.exception("Error al listar las ofertas laborales activas")
+        app.logger.exception("Error al listar las ofertas activas")
         return jsonify({
             "error": "No se pudieron obtener las ofertas laborales"
         }), 500
 
+
+# -----------------------------------------
+# OFERTAS DEL NEGOCIO PROPIETARIO
+# -----------------------------------------
+
+@app.route("/ofertas_negocio/<int:id_negocio>", methods=["GET"])
+def ofertas_negocio_api(id_negocio):
+
+    id_usuario = request.args.get("id_usuario", type=int)
+
+    if id_usuario is None:
+        return jsonify({
+            "error": "Falta el identificador del usuario"
+        }), 400
+
+    try:
+        if not negocio_es_de_usuario(id_negocio, id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para consultar estas ofertas"
+            }), 403
+
+        ofertas = listar_ofertas_por_negocio(id_negocio)
+
+        return jsonify({
+            "resultado": "ok",
+            "ofertas": ofertas
+        }), 200
+
+    except Exception:
+        app.logger.exception("Error al listar las ofertas del negocio")
+        return jsonify({
+            "error": "No se pudieron obtener las ofertas del negocio"
+        }), 500
+
+
+# -----------------------------------------
+# CAMBIAR ESTADO DE UNA OFERTA
+# -----------------------------------------
+
+@app.route("/estado_oferta/<int:id_oferta>", methods=["PUT"])
+def cambiar_estado_oferta_api(id_oferta):
+
+    datos = request.get_json() or {}
+
+    try:
+        id_usuario = int(datos.get("id_usuario"))
+        estado = int(datos.get("estado"))
+    except (ValueError, TypeError):
+        return jsonify({
+            "error": "Los datos enviados no son válidos"
+        }), 400
+
+    if estado not in (1, 2):
+        return jsonify({
+            "error": "El estado debe ser 1 (Activa) o 2 (Inactiva)"
+        }), 400
+
+    try:
+        oferta = buscar_oferta_por_id(id_oferta)
+
+        if oferta is None:
+            return jsonify({
+                "error": "Oferta laboral no encontrada"
+            }), 404
+
+        if not negocio_es_de_usuario(oferta["id_negocio"], id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para modificar esta oferta"
+            }), 403
+
+        if int(oferta["estado"]) not in (1, 2):
+            return jsonify({
+                "error": "Solamente se pueden cambiar ofertas activas o inactivas"
+            }), 400
+
+        actualizado = cambiar_estado_oferta(id_oferta, estado)
+
+        if not actualizado:
+            return jsonify({
+                "error": "No se pudo actualizar el estado de la oferta"
+            }), 400
+
+        return jsonify({
+            "resultado": "ok",
+            "mensaje": (
+                "La oferta ahora está activa"
+                if estado == 1
+                else "La oferta ahora está inactiva"
+            ),
+            "id_oferta": id_oferta,
+            "estado": estado
+        }), 200
+
+    except Exception:
+        app.logger.exception("Error al cambiar el estado de la oferta")
+        return jsonify({
+            "error": "No se pudo cambiar el estado de la oferta"
+        }), 500
+
+
+# -----------------------------------------
+# BUSCAR OFERTA PUBLICADA
+# -----------------------------------------
 
 @app.route("/buscar_oferta/<int:id_oferta>", methods=["GET"])
 def buscar_oferta_api(id_oferta):
@@ -1142,34 +1282,96 @@ def buscar_oferta_api(id_oferta):
 
         if oferta is None:
             return jsonify({
-                "error": "Oferta no encontrada"
+                "error": "Oferta no encontrada o inactiva"
             }), 404
 
         return jsonify(oferta), 200
 
     except Exception:
         app.logger.exception("Error al buscar la oferta laboral")
-
         return jsonify({
             "error": "No se pudo obtener la oferta laboral"
         }), 500
 
 
+# -----------------------------------------
+# MIS OFERTAS / POSTULACIONES DEL USUARIO
+# -----------------------------------------
+
+@app.route("/mis_ofertas/<int:id_usuario>", methods=["GET"])
+def mis_ofertas_api(id_usuario):
+
+    try:
+        usuario = buscar_usuario_por_id(id_usuario)
+
+        if usuario is None:
+            return jsonify({
+                "error": "Usuario no encontrado"
+            }), 404
+
+        ofertas = listar_ofertas_por_usuario(id_usuario)
+
+        return jsonify({
+            "resultado": "ok",
+            "cantidad": len(ofertas),
+            "ofertas": ofertas
+        }), 200
+
+    except Exception:
+        app.logger.exception("Error al obtener las ofertas del usuario")
+        return jsonify({
+            "error": "No se pudieron obtener tus ofertas"
+        }), 500
+
+
+# -----------------------------------------
+# ELIMINAR OFERTA
+# -----------------------------------------
+
 @app.route("/eliminar_oferta/<int:id_oferta>", methods=["DELETE"])
 def eliminar_oferta_api(id_oferta):
+
+    datos = request.get_json(silent=True) or {}
+
+    try:
+        id_usuario = int(datos.get("id_usuario"))
+    except (ValueError, TypeError):
+        return jsonify({
+            "error": "Falta un identificador de usuario válido"
+        }), 400
+
     try:
         oferta = buscar_oferta_por_id(id_oferta)
+
         if oferta is None:
-            return jsonify({"resultado": "Oferta no encontrada"}), 404
+            return jsonify({
+                "error": "Oferta laboral no encontrada"
+            }), 404
+
+        if not negocio_es_de_usuario(oferta["id_negocio"], id_usuario):
+            return jsonify({
+                "error": "No tenés permiso para eliminar esta oferta"
+            }), 403
 
         eliminado = eliminar_oferta(id_oferta)
-        if eliminado:
-            return jsonify({"resultado": "Oferta eliminada"}), 200
-        return jsonify({"resultado": "No se pudo eliminar la oferta"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
-    
+        if eliminado:
+            return jsonify({
+                "resultado": "ok",
+                "mensaje": "Oferta eliminada correctamente"
+            }), 200
+
+        return jsonify({
+            "error": "No se pudo eliminar la oferta"
+        }), 400
+
+    except Exception:
+        app.logger.exception("Error al eliminar la oferta")
+        return jsonify({
+            "error": "No se pudo eliminar la oferta"
+        }), 500
+
+
 # -----------------------------------------
 # POSTULACIONES LABORALES
 # -----------------------------------------
@@ -1181,7 +1383,6 @@ def postularse_api():
     id_oferta = request.form.get("id_oferta")
     archivo_cv = request.files.get("archivo_cv")
 
-    # Validar identificadores
     try:
         id_usuario = int(id_usuario)
         id_oferta = int(id_oferta)
@@ -1190,13 +1391,11 @@ def postularse_api():
             "error": "Los identificadores del usuario y la oferta no son válidos"
         }), 400
 
-    # Validar que se haya adjuntado el CV
     if archivo_cv is None or not archivo_cv.filename:
         return jsonify({
             "error": "Tenés que adjuntar tu CV para postularte"
         }), 400
 
-    # Validar extensión
     nombre_seguro = secure_filename(archivo_cv.filename)
 
     if "." not in nombre_seguro:
@@ -1214,8 +1413,6 @@ def postularse_api():
     ruta_cv = None
 
     try:
-
-        # Comprobar que exista el usuario
         usuario = buscar_usuario_por_id(id_usuario)
 
         if usuario is None:
@@ -1223,7 +1420,8 @@ def postularse_api():
                 "error": "Usuario no encontrado"
             }), 404
 
-        # Comprobar que la oferta exista y esté publicada
+        # Esta función solamente devuelve ofertas activas (estado 1).
+        # Por eso también bloquea las postulaciones a ofertas inactivas (estado 2).
         oferta = buscar_oferta_publicada_por_id(id_oferta)
 
         if oferta is None:
@@ -1231,27 +1429,19 @@ def postularse_api():
                 "error": "La oferta laboral no existe o ya no está disponible"
             }), 404
 
-        # Comprobar si ya se postuló
         if usuario_ya_postulado(id_usuario, id_oferta):
             return jsonify({
                 "resultado": "ya_postulado",
                 "mensaje": "Esta oferta laboral ya fue solicitada"
             }), 409
 
-        # Crear nombre único para el archivo
-        nombre_archivo = (
-            f"{uuid.uuid4().hex}_{nombre_seguro}"
-        )
-
+        nombre_archivo = f"{uuid.uuid4().hex}_{nombre_seguro}"
         ruta_completa = os.path.join(CV_FOLDER, nombre_archivo)
 
-        # Guardar el archivo
         archivo_cv.save(ruta_completa)
 
-        # Ruta que se guardará en la base de datos
         ruta_cv = f"/static/imagenes/cv/{nombre_archivo}"
 
-        # Registrar postulación junto con el CV
         registrado = registrar_postulacion(
             id_usuario,
             id_oferta,
@@ -1259,8 +1449,6 @@ def postularse_api():
         )
 
         if not registrado:
-
-            # Si no se registró, eliminar el archivo guardado
             if os.path.exists(ruta_completa):
                 os.remove(ruta_completa)
 
@@ -1276,10 +1464,8 @@ def postularse_api():
         }), 201
 
     except Exception:
-
         app.logger.exception("Error al registrar la postulación")
 
-        # Evitar dejar archivos sin una postulación asociada
         if ruta_cv:
             nombre_archivo = os.path.basename(ruta_cv)
             ruta_completa = os.path.join(CV_FOLDER, nombre_archivo)
@@ -1292,7 +1478,6 @@ def postularse_api():
         }), 500
 
 
-# Consultar si un usuario ya se postuló a una oferta
 @app.route(
     "/estado_postulacion/<int:id_oferta>/<int:id_usuario>",
     methods=["GET"]
@@ -1300,7 +1485,6 @@ def postularse_api():
 def estado_postulacion_api(id_oferta, id_usuario):
 
     try:
-
         ya_postulado = usuario_ya_postulado(id_usuario, id_oferta)
 
         return jsonify({
@@ -1313,14 +1497,11 @@ def estado_postulacion_api(id_oferta, id_usuario):
 
     except Exception:
         app.logger.exception("Error al consultar el estado de la postulación")
-
         return jsonify({
             "error": "No se pudo consultar la postulación"
         }), 500
 
 
-# Consultar las postulaciones recibidas por una oferta
-# Solamente puede hacerlo el dueño del negocio.
 @app.route(
     "/postulaciones_oferta/<int:id_oferta>",
     methods=["GET"]
@@ -1335,8 +1516,6 @@ def postulaciones_oferta_api(id_oferta):
         }), 400
 
     try:
-
-        # Buscar la oferta
         oferta = buscar_oferta_por_id(id_oferta)
 
         if oferta is None:
@@ -1344,10 +1523,7 @@ def postulaciones_oferta_api(id_oferta):
                 "error": "Oferta laboral no encontrada"
             }), 404
 
-        # Comprobar que el usuario sea dueño del negocio
-        id_negocio = oferta.get("id_negocio")
-
-        if not negocio_es_de_usuario(id_negocio, id_usuario):
+        if not negocio_es_de_usuario(oferta["id_negocio"], id_usuario):
             return jsonify({
                 "error": "No tenés permiso para consultar estas postulaciones"
             }), 403
@@ -1362,14 +1538,11 @@ def postulaciones_oferta_api(id_oferta):
 
     except Exception:
         app.logger.exception("Error al listar las postulaciones")
-
         return jsonify({
             "error": "No se pudieron obtener las postulaciones"
         }), 500
 
 
-# Consultar la cantidad de postulaciones de una oferta
-# Solamente puede hacerlo el dueño del negocio.
 @app.route(
     "/contar_postulaciones/<int:id_oferta>",
     methods=["GET"]
@@ -1384,7 +1557,6 @@ def contar_postulaciones_api(id_oferta):
         }), 400
 
     try:
-
         oferta = buscar_oferta_por_id(id_oferta)
 
         if oferta is None:
@@ -1392,9 +1564,7 @@ def contar_postulaciones_api(id_oferta):
                 "error": "Oferta laboral no encontrada"
             }), 404
 
-        id_negocio = oferta.get("id_negocio")
-
-        if not negocio_es_de_usuario(id_negocio, id_usuario):
+        if not negocio_es_de_usuario(oferta["id_negocio"], id_usuario):
             return jsonify({
                 "error": "No tenés permiso para consultar este contador"
             }), 403
@@ -1409,11 +1579,9 @@ def contar_postulaciones_api(id_oferta):
 
     except Exception:
         app.logger.exception("Error al contar las postulaciones")
-
         return jsonify({
             "error": "No se pudo obtener la cantidad de postulaciones"
         }), 500
-
 
 # -----------------------------------------
 # RECETA

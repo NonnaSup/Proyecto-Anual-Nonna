@@ -108,11 +108,15 @@ def actualizar_borrador(id_oferta, puesto, descripcion, jornada, vacantes):
             descripcion = %s,
             jornada = %s,
             vacantes = %s,
-            estado = %s
+            estado = CASE
+                WHEN estado = 0 THEN 1
+                ELSE estado
+            END
         WHERE id_oferta = %s
+          AND estado IN (0, 1, 2)
     """
 
-    cursor.execute(sql, (puesto, descripcion, jornada, vacantes, True, id_oferta, ))
+    cursor.execute(sql, (puesto, descripcion, jornada, vacantes, id_oferta))
 
     conexion.commit()
 
@@ -276,23 +280,145 @@ def eliminar_oferta(id_oferta):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
-    sql = """
-        UPDATE OfertaLaboral
-        SET estado = %s
-        WHERE id_oferta = %s
-    """
+    try:
+        sql = """
+            UPDATE OfertaLaboral
+            SET estado = 2
+            WHERE id_oferta = %s
+              AND estado IN (1, 2)
+        """
 
-    cursor.execute(sql, (3, id_oferta, ))
+        cursor.execute(sql, (id_oferta,))
+        conexion.commit()
 
-    conexion.commit()
+        return cursor.rowcount > 0
 
-    eliminado = cursor.rowcount > 0
+    except Exception:
+        conexion.rollback()
+        raise
 
-    cursor.close()
-    conexion.close()
+    finally:
+        cursor.close()
+        conexion.close()
 
-    return eliminado
+def cambiar_estado_oferta(id_oferta, estado):
 
+    if estado not in (1, 2):
+        return False
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    try:
+        sql = """
+            UPDATE OfertaLaboral
+            SET estado = %s
+            WHERE id_oferta = %s
+              AND estado IN (1, 2)
+        """
+
+        cursor.execute(sql, (estado, id_oferta))
+        conexion.commit()
+
+        return cursor.rowcount > 0
+
+    except Exception:
+        conexion.rollback()
+        raise
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+def listar_ofertas_por_negocio(id_negocio):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    try:
+        sql = """
+            SELECT
+                o.id_oferta,
+                o.id_negocio,
+                o.id_sucursal,
+                o.puesto,
+                o.descripcion,
+                o.jornada,
+                o.vacantes,
+                o.estado,
+                n.nombre_comercial,
+                n.logo,
+                s.nombre AS nombre_sucursal,
+                s.direccion AS direccion_sucursal
+
+            FROM OfertaLaboral AS o
+
+            INNER JOIN Negocio AS n
+                ON n.id_negocio = o.id_negocio
+
+            LEFT JOIN Sucursal AS s
+                ON s.id_sucursal = o.id_sucursal
+
+            WHERE o.id_negocio = %s
+              AND o.estado IN (1, 2)
+
+            ORDER BY o.id_oferta DESC
+        """
+
+        cursor.execute(sql, (id_negocio,))
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexion.close()
+
+
+def listar_ofertas_por_usuario(id_usuario):
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor(dictionary=True)
+
+    try:
+        sql = """
+            SELECT
+                p.id_postulacion,
+                p.id_usuario,
+                p.id_oferta,
+                p.fecha,
+                p.estado AS estado_postulacion,
+                p.archivo_cv,
+
+                o.puesto,
+                o.descripcion,
+                o.jornada,
+                o.vacantes,
+                o.estado AS estado_oferta,
+
+                n.id_negocio,
+                n.nombre_comercial,
+                n.logo
+
+            FROM Postulacion AS p
+
+            INNER JOIN OfertaLaboral AS o
+                ON o.id_oferta = p.id_oferta
+
+            INNER JOIN Negocio AS n
+                ON n.id_negocio = o.id_negocio
+
+            WHERE p.id_usuario = %s
+              AND o.estado IN (1, 2)
+              AND n.estado = 1
+
+            ORDER BY p.fecha DESC, p.id_postulacion DESC
+        """
+
+        cursor.execute(sql, (id_usuario,))
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexion.close()
 
 def usuario_ya_postulado(id_usuario, id_oferta):
     """
