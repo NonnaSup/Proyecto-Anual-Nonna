@@ -1413,19 +1413,16 @@ def postularse_api():
             "archivo_cv": ruta_cv
         }), 201
 
-     except Exception:
-        app.logger.exception("Error al registrar la postulación")
-
+except Exception:
+    app.logger.exception("Error al registrar la postulación")
     if ruta_cv:
-            nombre_archivo = os.path.basename(ruta_cv)
-            ruta_completa = os.path.join(CV_FOLDER, nombre_archivo)
-
+        nombre_archivo = os.path.basename(ruta_cv)
+        ruta_completa = os.path.join(CV_FOLDER, nombre_archivo)
         if os.path.exists(ruta_completa):
-                os.remove(ruta_completa)
+            os.remove(ruta_completa)
 
-   return jsonify({
-            "error": "No se pudo registrar la postulación"
-        }), 500
+    return jsonify({"error": "No se pudo registrar la postulación"}), 500
+
 
 @app.route(
     "/estado_postulacion/<int:id_oferta>/<int:id_usuario>",
