@@ -372,10 +372,11 @@ def registrar_postulacion(id_usuario, id_oferta, archivo_cv):
         
 
 
+
 def listar_postulaciones_por_oferta(id_oferta):
     """
     Devuelve las postulaciones de una oferta laboral
-    junto con los datos del usuario que se postuló.
+    junto con los datos del usuario y la ruta del CV.
     """
 
     conexion = obtener_conexion()
@@ -389,6 +390,7 @@ def listar_postulaciones_por_oferta(id_oferta):
                 p.id_oferta,
                 p.fecha,
                 p.estado,
+                p.archivo_cv,
                 u.nombre,
                 u.nombre_usuario,
                 u.foto_perfil
