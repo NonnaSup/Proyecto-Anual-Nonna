@@ -9,12 +9,12 @@ ELIMINAR = {
     "Receta": "UPDATE Receta SET estado = 0 WHERE id_receta = %s",
     "Comentario": "UPDATE Comentario SET estado = 0 WHERE id_comentario = %s",
     "Reaccion": "DELETE FROM Reaccion WHERE id_reaccion = %s",
+    "Negocio": "UPDATE Negocio SET estado = 0 WHERE id_negocio = %s",
 }
 
 
 # Lo que un usuario puede denunciar desde la app
-TIPOS_DENUNCIABLES = ("Receta", "Comentario", "Cuenta")
-
+TIPOS_DENUNCIABLES = ("Receta", "Comentario", "Cuenta", "Negocio")
 
 def _leer(sql, params=()):
     conexion = obtener_conexion()
