@@ -347,6 +347,7 @@ def listar_ofertas_por_negocio(id_negocio):
         conexion.close()
 
 
+
 def listar_ofertas_por_usuario(id_usuario):
 
     conexion = obtener_conexion()
@@ -381,7 +382,7 @@ def listar_ofertas_por_usuario(id_usuario):
                 ON n.id_negocio = o.id_negocio
 
             WHERE p.id_usuario = %s
-              AND o.estado IN 1
+              AND o.estado = 1
               AND n.estado = 1
 
             ORDER BY p.fecha DESC, p.id_postulacion DESC
@@ -393,6 +394,7 @@ def listar_ofertas_por_usuario(id_usuario):
     finally:
         cursor.close()
         conexion.close()
+
 
 def usuario_ya_postulado(id_usuario, id_oferta):
     """
