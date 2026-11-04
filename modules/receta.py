@@ -270,6 +270,7 @@ def listar_recetas_previa(id_usuario=None):
         ON mi.id_receta = r.id_receta
        AND mi.id_usuario = %s
     WHERE r.estado = 1
+    ORDER BY r.fecha_publicacion DESC, r.id_receta DESC
     """
 
     try:
@@ -517,4 +518,3 @@ def editar_receta(
     finally:
         cursor.close()
         conexion.close()
-
