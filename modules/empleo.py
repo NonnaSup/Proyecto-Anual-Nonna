@@ -381,7 +381,7 @@ def listar_ofertas_por_usuario(id_usuario):
                 ON n.id_negocio = o.id_negocio
 
             WHERE p.id_usuario = %s
-              AND o.estado IN (1, 2)
+              AND o.estado IN 1
               AND n.estado = 1
 
             ORDER BY p.fecha DESC, p.id_postulacion DESC
