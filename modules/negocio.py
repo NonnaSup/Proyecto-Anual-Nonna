@@ -292,6 +292,7 @@ def listar_productos_activos():
         p.nombre,
         p.descripcion,
         p.precio,
+        p.unidad,
         p.destacado,
         (
             SELECT i.ruta
@@ -399,7 +400,7 @@ def buscar_casa_central(id_negocio):
 
     return oferta is not None
 
-def crear_producto(id_negocio, nombre, descripcion, precio, imagen=None):
+def crear_producto(id_negocio, nombre, descripcion, precio, imagen=None, unidad="unidad"):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
@@ -410,10 +411,11 @@ def crear_producto(id_negocio, nombre, descripcion, precio, imagen=None):
                 nombre,
                 descripcion,
                 precio,
+                unidad,
                 estado,
                 destacado
             )
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
 
         cursor.execute(consulta, (
@@ -421,6 +423,7 @@ def crear_producto(id_negocio, nombre, descripcion, precio, imagen=None):
             nombre,
             descripcion,
             precio,
+            unidad,
             True,
             False
         ))
@@ -469,6 +472,7 @@ def listar_productos_negocio(id_negocio):
                 p.nombre,
                 p.descripcion,
                 p.precio,
+                p.unidad,
                 p.estado,
                 p.destacado,
                 (
@@ -509,7 +513,7 @@ def listar_productos_negocio(id_negocio):
 
 
 
-def actualizar_producto(id_producto, id_usuario, nombre, descripcion, precio, imagen=None):
+def actualizar_producto(id_producto, id_usuario, nombre, descripcion, precio, imagen=None, unidad="unidad"):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
@@ -534,10 +538,11 @@ def actualizar_producto(id_producto, id_usuario, nombre, descripcion, precio, im
             UPDATE Producto
             SET nombre = %s,
                 descripcion = %s,
-                precio = %s
+                precio = %s,
+                unidad = %s
             WHERE id_producto = %s
               AND estado = 1
-        """, (nombre, descripcion, precio, id_producto))
+        """, (nombre, descripcion, precio, unidad, id_producto))
 
         # Si se envió una imagen nueva, reemplazar la principal.
         if imagen:

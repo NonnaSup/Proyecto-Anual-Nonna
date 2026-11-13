@@ -749,6 +749,10 @@ def nueva_sucursal():
         return jsonify({"error": str(e)}), 500
 
 
+# Unidades de venta permitidas para un producto.
+UNIDADES_PRODUCTO = {"kilo", "gramos", "unidad", "docena"}
+
+
 @app.route("/nuevo_producto", methods=["POST"])
 def nuevo_producto():
     try:
@@ -757,6 +761,7 @@ def nuevo_producto():
         nombre = (request.form.get("nombre") or "").strip()
         descripcion = (request.form.get("descripcion") or "").strip()
         precio_texto = request.form.get("precio")
+        unidad = (request.form.get("unidad") or "unidad").strip().lower()
 
         # Validar campos obligatorios
         if not id_usuario or not id_negocio or not nombre or not precio_texto:
@@ -781,6 +786,12 @@ def nuevo_producto():
                 "mensaje": "Ingresá un precio válido, igual o mayor que cero."
             }), 400
 
+        if unidad not in UNIDADES_PRODUCTO:
+            return jsonify({
+                "resultado": "error",
+                "mensaje": "La unidad elegida no es válida."
+            }), 400
+
         # Verificar que el negocio pertenezca al usuario
         if not negocio_es_de_usuario(id_negocio, id_usuario):
             return jsonify({
@@ -798,7 +809,8 @@ def nuevo_producto():
             nombre=nombre,
             descripcion=descripcion or None,
             precio=precio,
-            imagen=ruta_imagen
+            imagen=ruta_imagen,
+            unidad=unidad
         )
 
         if not resultado:
@@ -892,10 +904,16 @@ def producto_editar_api(id_producto):
         nombre = (request.form.get("nombre") or "").strip()
         descripcion = (request.form.get("descripcion") or "").strip()
         precio_texto = request.form.get("precio")
+        unidad = (request.form.get("unidad") or "unidad").strip().lower()
 
         if not id_usuario or not nombre or not precio_texto:
             return jsonify({
                 "error": "Faltan datos obligatorios"
+            }), 400
+
+        if unidad not in UNIDADES_PRODUCTO:
+            return jsonify({
+                "error": "La unidad elegida no es válida"
             }), 400
 
         try:
@@ -919,7 +937,8 @@ def producto_editar_api(id_producto):
             nombre,
             descripcion or None,
             precio,
-            ruta_imagen
+            ruta_imagen,
+            unidad
         )
 
         if not actualizado:
