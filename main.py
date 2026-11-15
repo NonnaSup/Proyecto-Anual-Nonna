@@ -545,34 +545,42 @@ def nuevo_negocio():
         }), 500
 
 
+
 @app.route("/traer_negocios", methods=["GET"])
 def traer_negocios():
     try:
         negocios = listar_negocios()
 
-        # Publicaciones de cada negocio = sus productos activos (maximo 3)
+        # Publicaciones de cada negocio = todos sus productos activos
         publicaciones = {}
 
         try:
             for producto in listar_productos_activos():
-                lista = publicaciones.setdefault(producto["id_negocio"], [])
 
-                if len(lista) < 3:
-                    precio = producto["precio"]
+                id_negocio = producto["id_negocio"]
 
-                    lista.append({
-                        "id_producto": producto["id_producto"],
-                        "nombre": producto["nombre"],
-                        "descripcion": producto["descripcion"],
-                        "precio": float(precio) if precio is not None else None,
-                        "destacado": bool(producto["destacado"]),
-                        "imagen": producto["imagen"]
-                    })
+                lista = publicaciones.setdefault(id_negocio, [])
+
+                precio = producto["precio"]
+
+                lista.append({
+                    "id_producto": producto["id_producto"],
+                    "nombre": producto["nombre"],
+                    "descripcion": producto["descripcion"],
+                    "precio": float(precio) if precio is not None else None,
+                    "destacado": bool(producto["destacado"]),
+                    "imagen": producto["imagen"]
+                })
+
         except Exception:
-            # si fallan las publicaciones, igual se muestran los negocios
-            app.logger.exception("Error al traer las publicaciones de los negocios")
+            # Si fallan las publicaciones, igual se muestran los negocios
+            app.logger.exception(
+                "Error al traer las publicaciones de los negocios"
+            )
 
+        # Asignar todas las publicaciones a cada negocio
         for negocio_fila in negocios:
+
             negocio_fila["publicaciones"] = publicaciones.get(
                 negocio_fila["id_negocio"], []
             )
@@ -581,7 +589,10 @@ def traer_negocios():
 
     except Exception:
         app.logger.exception("Error al listar los negocios")
-        return jsonify({"error": "No se pudieron obtener los negocios"}), 500
+
+        return jsonify({
+            "error": "No se pudieron obtener los negocios"
+        }), 500
 
 
 @app.route("/traer_negocios_perfil/<int:id_usuario>", methods=["GET"])
